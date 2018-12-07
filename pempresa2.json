@@ -1,0 +1,23 @@
+{
+	"empresa":"Youtuber",
+	"nome":"Pedo Bo",
+	"cidade":"Tupaciguara",
+	"contato":{
+		"telefone":"3281-4541",
+		"email":"phmartins@gmail.com"
+	},
+	"endereco":{
+		"bairro":"Nova Esperanca",
+		"rua":"Dimas Cardoso",
+		"numero":"81b"
+	},
+	"prestacao":{
+		"nome":"Videos para o Youtube",
+		"tipo":"Videos",
+		"preco":"Uma pistola no bumbum",
+		"descricao":"Nao gosta de estudar"
+	},
+	"comentarios":{
+		"comentario":"Aquele bruno e um menininho exelente"
+	}
+}

@@ -1,0 +1,23 @@
+{
+	"empresa":"Desenvoledor",
+	"nome":"casera",
+	"cidade":"Tupaciguara",
+	"contato":{
+		"telefone":"3281-4541",
+		"email":"xurask8@gmail.com"
+	},
+	"endereco":{
+		"bairro":"Nova Esperanca",
+		"rua":"Dimas Cardoso",
+		"numero":"81b"
+	},
+	"prestacao":{
+		"nome":"Aplicativo de Mercado",
+		"tipo":"Aplicativo",
+		"preco":"Milho gigante",
+		"descricao":"Aplicativo de busca de mercado"
+	},
+	"comentarios":{
+		"comentario":"Mais que belezura"
+	}
+}
