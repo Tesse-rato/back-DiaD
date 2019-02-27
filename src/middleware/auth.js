@@ -3,9 +3,16 @@ const env = require('../environment/index');
 
 module.exports = (req, res, next) => {
   const route = req.path;
-  if (route === '/users/auth' || route === '/users/create') {
+  if (route === '/users/auth' ||
+    route === '/users/create' ||
+    route === '/users/forgot_password' ||
+    route === '/users/reset_password'
+  ) {
+    console.log('Nao passou por token');
     return next();
   }
+
+  console.log('Passou por token');
   const { authorization } = req.headers;
 
   if (!authorization) return res.status(400).send({ error: 'No token povided' });

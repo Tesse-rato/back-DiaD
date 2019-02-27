@@ -133,9 +133,12 @@ route.post('/auth', (req, res) => {
 //------------------------------------------------------------------------------------//
 /**
  * Users Forgot his Password
+ * Recebe um e-mail de quem esta querendo recuperar a senha
+ * É salvo no modelo do usuario um token de recuperação e um tempo limite
+ * Após isso o certo e-mail recebe o token no seu respectivo e-mail e já pode ir pra proxima rota
  */
 route.post('/forgot_password', (req, res) => {
-  const { id, email } = req.body;
+  const { email } = req.body;
 
   User.findOne({ email }).select('+password').then((user) => {
     if (user) {
@@ -164,9 +167,19 @@ route.post('/forgot_password', (req, res) => {
   });
 })
 
+//------------------------------------------------------------------------------------//
+/**
+ * reset Password recebe um email e um token de recuperacao
+ * Confirma se o usuario forneceu um token e uma nova senha
+ * Se sim o email é procurado no banco de dados
+ * Se encontrado o token e o tempo limite so conferidos
+ * Se (token === user.token e tempoLimite < agora) => usuario é atualizado
+ */
 route.post('/reset_password', (req, res) => {
   const { token, email, password } = req.body;
-  console.log(token, email, password);
+  if (!token) return res.status(400).send({ error: 'Token no provided' });
+  if (!password) return res.status(400).send({ error: 'Password not provided' });
+
   User.findOne({ email }).select('+password +tokenForgotPassword +tokenForgotExpires')
     .then((user) => {
       const date = new Date();
@@ -181,8 +194,10 @@ route.post('/reset_password', (req, res) => {
 
           res.send({ status: 'User password has benn reset ' });
         })
+      } else if (user.tokenForgotExpires > date.toString()) {
+        res.status(400).send({ error: 'Token expired, get a new one' });
       } else {
-        res.status(400).send({ error: 'Token expired, get new one' });
+        res.status(400).send({ error: 'Token Invalid' });
       }
     })
     .catch(err => {
