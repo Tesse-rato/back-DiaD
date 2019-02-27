@@ -1,11 +1,18 @@
 const route = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const User = require('../models/userModel');
-const middlewareAuth = require('../middleware/auth');
 const env = require('../environment/index');
+const sendMail = require('../mail');
 
+//------------------------------------------------------------------------------------//
+/**
+ * Generate token recebe o id do usúario como identificações futuruas ao token
+ * recebe uma callback quando o token esta pronto
+ */
 const generateToken = (params = {}, cb) => {
   jwt.sign(params, env.secretKey, {
     expiresIn: 86400
@@ -46,8 +53,12 @@ const validateUser = (form = {}) => {
   });
 };
 
+//------------------------------------------------------------------------------------//
+/**
+ * Apenas lista usuarios para testes na api
+ */
 route.get('/list', (req, res) => {
-  User.find().then((users) => {
+  User.find().select('+password +tokenForgotPassword +tokenForgotExpires').then((users) => {
     res.send({ users });
   });
 });
@@ -80,6 +91,7 @@ route.post('/create', (req, res) => {
   });
 });
 
+//------------------------------------------------------------------------------------//
 /**
  * Auth primeiro verifica se o usuário foreneceu os dados necessarios
  * Se sim confere no banco se o usuario existe
@@ -107,15 +119,79 @@ route.post('/auth', (req, res) => {
         return res.status(401).send({ error: 'Invalid password' })
       }
       user.password = undefined;
-
+      console.log(user._id);
       generateToken({ id: user._id }, (err, token) => {
         if (err) return res.status(400).send({ erro: 'Error on generate token' });
         res.send({ user, token });
+        // jwt expired -> erro retornado quando expira o token
+        //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVjNzNjYTE0NGRhOTViMjc0NDg1NmFiYSIsImlhdCI6MTU1MTA5MzM1NiwiZXhwIjoxNTUxMTc5NzU2fQ.5pi3Hsgz5KWb55QPEjyq1lEX76xPALcfW7JV-Nv-re4 
       });
     });
   });
 });
 
+//------------------------------------------------------------------------------------//
+/**
+ * Users Forgot his Password
+ */
+route.post('/forgot_password', (req, res) => {
+  const { id, email } = req.body;
+
+  User.findOne({ email }).select('+password').then((user) => {
+    if (user) {
+      const token = crypto.randomBytes(32).toString('HEX');
+      const date = new Date()
+      date.setHours(date.getHours() + 1);
+      const newUser = {
+        __v: user.__v,
+        _id: user.id,
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        tokenForgotPassword: token,
+        tokenForgotExpires: date.toString()
+      }
+      User.findByIdAndUpdate({ _id: user.id }, newUser).then(() => {
+        sendMail(user.email, token).then(info => {
+          return res.send({ status: 'Success', info });
+        }).catch(err => {
+          return res.status(500).send({ error: 'Error on send e-mail, try again' });
+        })
+      }).catch(err => {
+        return res.status(500).send({ error: 'Error in updating user token to reset password ' });
+      })
+    }
+  });
+})
+
+route.post('/reset_password', (req, res) => {
+  const { token, email, password } = req.body;
+  console.log(token, email, password);
+  User.findOne({ email }).select('+password +tokenForgotPassword +tokenForgotExpires')
+    .then((user) => {
+      const date = new Date();
+      date.setHours(date.getHours());
+
+      if (user.tokenForgotPassword === token && user.tokenForgotExpires > date.toString()) {
+        user.password = password;
+        user.tokenForgotExpires = '';
+        user.tokenForgotPassword = '';
+        user.save(err => {
+          if (err) return res.status(500).send({ error: 'Error on update user password, try again' });
+
+          res.send({ status: 'User password has benn reset ' });
+        })
+      } else {
+        res.status(400).send({ error: 'Token expired, get new one' });
+      }
+    })
+    .catch(err => {
+      console.log(err);
+      return res.status(400).send({ error: 'User not found' });
+    })
+})
+
+//------------------------------------------------------------------------------------//
 route.delete('/remove/all', (req, res) => {
   User.deleteMany({}).then(() => {
     res.send({ remove: 'all' });

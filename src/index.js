@@ -13,5 +13,5 @@ express.use('/users', userRoutes);
 
 express.listen(process.env.PORT || env.port, () => {
   console.clear();
-  console.log('Servidor rodando com sucesso');
+  console.log('Servidor rodando');
 });

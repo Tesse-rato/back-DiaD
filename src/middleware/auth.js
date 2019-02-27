@@ -16,8 +16,7 @@ module.exports = (req, res, next) => {
 
   jwt.verify(token, env.secretKey, (err, decoded) => {
     if (err) return res.status(400).send(err.message);
-
-    req.id = decoded.id;
+    req.body.tokenId = decoded.id;
     return next();
   })
 
