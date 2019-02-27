@@ -1,0 +1,19 @@
+{
+  "name": "Node-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/Tesse-rato/Node-api.git",
+  "author": "Bruno França",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4",
+    "jsonwebtoken": "^8.5.0",
+    "mongoose": "^5.4.15"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "nodemon src/index.js"
+  }
+}
