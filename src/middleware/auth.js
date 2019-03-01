@@ -22,8 +22,11 @@ module.exports = (req, res, next) => {
   if (bearer !== 'Bearer') return res.status(400).send({ error: 'Token malformatted' });
 
   jwt.verify(token, env.secretKey, (err, decoded) => {
-    if (err) return res.status(400).send(err.message);
-    req.body.tokenId = decoded.id;
+    if (err) {
+      console.log(err);
+      return res.status(400).send(err.message);
+    }
+    req.id = decoded.id;
     return next();
   })
 

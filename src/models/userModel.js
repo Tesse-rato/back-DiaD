@@ -1,7 +1,7 @@
 const mongoose = require('../database/index');
 const bcrypt = require('bcryptjs');
 
-const userModel = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
   name: {
     first: {
       type: String,
@@ -37,10 +37,15 @@ const userModel = new mongoose.Schema({
   tokenForgotExpires: {
     type: String,
     select: false
-  }
+  },
+  posts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Post',
+    select: false
+  }]
 })
 
-userModel.pre('save', function (next) {
+userSchema.pre('save', function (next) {
   try {
     bcrypt.hash(this.password, 10, (err, hashPassword) => {
       if (err) throw new Error;
@@ -54,4 +59,4 @@ userModel.pre('save', function (next) {
   }
 })
 
-module.exports = mongoose.model('User', userModel);
+module.exports = mongoose.model('User', userSchema);

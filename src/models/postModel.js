@@ -1,8 +1,42 @@
 const mongoose = require('../database');
 
-const postModel = new mongoose.Schema({
-
-
+const postSchema = new mongoose.Schema({
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now()
+  },
+  pushes: {
+    times: {
+      type: Number,
+      default: 0,
+    },
+    users: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }]
+  },
+  comments: [{
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    content: {
+      type: String,
+    },
+    commentAt: {
+      type: Date,
+      default: Date.now()
+    }
+  }],
+  content: {
+    type: String,
+    required: true,
+  }
 })
 
-module.exports = mongoose.Model('Post', postModel);
+module.exports = mongoose.model('Post', postSchema);

@@ -2,7 +2,6 @@ const route = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 
 const User = require('../models/userModel');
 const env = require('../environment/index');
@@ -15,7 +14,7 @@ const sendMail = require('../mail');
  */
 const generateToken = (params = {}, cb) => {
   jwt.sign(params, env.secretKey, {
-    expiresIn: 86400
+    expiresIn: '1d' /*86400*/
   }, cb);
 };
 
@@ -58,7 +57,7 @@ const validateUser = (form = {}) => {
  * Apenas lista usuarios para testes na api
  */
 route.get('/list', (req, res) => {
-  User.find().select('+password +tokenForgotPassword +tokenForgotExpires').then((users) => {
+  User.find().populate('posts').select('+posts +password +tokenForgotPassword +tokenForgotExpires').then((users) => {
     res.send({ users });
   });
 });
@@ -119,7 +118,6 @@ route.post('/auth', (req, res) => {
         return res.status(401).send({ error: 'Invalid password' })
       }
       user.password = undefined;
-      console.log(user._id);
       generateToken({ id: user._id }, (err, token) => {
         if (err) return res.status(400).send({ erro: 'Error on generate token' });
         res.send({ user, token });
@@ -187,8 +185,8 @@ route.post('/reset_password', (req, res) => {
 
       if (user.tokenForgotPassword === token && user.tokenForgotExpires > date.toString()) {
         user.password = password;
-        user.tokenForgotExpires = '';
-        user.tokenForgotPassword = '';
+        user.tokenForgotExpires = undefined;
+        user.tokenForgotPassword = undefined;
         user.save(err => {
           if (err) return res.status(500).send({ error: 'Error on update user password, try again' });
 
