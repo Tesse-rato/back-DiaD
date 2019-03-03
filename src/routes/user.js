@@ -57,7 +57,7 @@ const validateUser = (form = {}) => {
  * Apenas lista usuarios para testes na api
  */
 route.get('/list', (req, res) => {
-  User.find().populate('posts').select('+posts +password +tokenForgotPassword +tokenForgotExpires').then((users) => {
+  User.find()/*.populate('posts')*/.select('+posts +password +tokenForgotPassword +tokenForgotExpires').then((users) => {
     res.send({ users });
   });
 });
@@ -162,7 +162,9 @@ route.post('/forgot_password', (req, res) => {
         return res.status(500).send({ error: 'Error in updating user token to reset password ' });
       })
     }
-  });
+  }).catch(err => {
+    res.status(400).send({ error: 'User not found ' });
+  })
 })
 
 //------------------------------------------------------------------------------------//

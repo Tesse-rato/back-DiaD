@@ -16,7 +16,7 @@ route.post('/create', (req, res) => {
     Post.create({ assignedTo, content }).then(post => {
       const posts = user.posts;
       posts.push(post._id);
-      user.update({ posts }, (err) => {
+      user.updateOne({ posts }, (err) => {
         if (err) return res.status(500).send({ error: 'Error on user update, try again' });
         res.send();
       });
@@ -46,7 +46,7 @@ route.post('/push', (req, res) => {
     const times = post.pushes.times + 1;
     const users = [...post.pushes.users, assignedTo];
     const pushes = { times, users };
-    post.update({ pushes }, (err) => {
+    post.updateOne({ pushes }, (err) => {
       if (err) return res.status(500).send({ error: 'Error on pushes update try again' });
       res.send();
     });
@@ -101,6 +101,21 @@ route.delete('/delete/all', (req, res) => {
   Post.deleteMany().then(() => {
     res.send({ message: 'Success' });
   });
+});
+
+route.delete('/delete/:id', (req, res) => {
+  const _id = req.params.id;
+  console.log(_id);
+
+  Post.findById({ _id }).then(post => {
+    console.log(post);
+    User.findById({ _id: post.assignedTo }).then(user => {
+      res.send();
+      console.log(user);
+    })
+  });
+
+
 });
 
 module.exports = route;

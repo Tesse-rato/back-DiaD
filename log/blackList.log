@@ -1,0 +1,5 @@
+::ffff:191.55.61.112 | /testando | Sat Mar 02 2019 21:40:58 GMT-0300 (GMT-03:00)
+::ffff:191.55.61.112 | /favicon.ico | Sat Mar 02 2019 21:40:58 GMT-0300 (GMT-03:00)
+GET | ::ffff:191.55.61.112 | /testando | Sat Mar 02 2019 21:41:32 GMT-0300 (GMT-03:00)
+GET | ::ffff:191.55.61.112 | /favicon.ico | Sat Mar 02 2019 21:41:32 GMT-0300 (GMT-03:00)
+GET | ::1 | /euSouUmHackerMal | Sat Mar 02 2019 21:42:25 GMT-0300 (GMT-03:00)

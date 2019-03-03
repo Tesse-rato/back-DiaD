@@ -15,7 +15,10 @@
     "nodemailer": "^5.1.1"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "test": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "devDependencies": {
+    "eslint": "^5.15.0"
   }
 }
