@@ -104,7 +104,7 @@ route.post('/create', (req, res) => {
  * Usuário tem dois campos [originalPhoto, thumbnail] que acompanha o link da imagem em disco
  * Sempre que a rota é chamada, é apagado as antigas fotos em disco para otimizar espaço
  */
-route.post('/profilePhoto/:id', uploadMiddleware, (req, res) => {
+route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
   if (req.uploadError) return res.status(400).send({ error: 'User not found' });
 
   const user = req.user;
@@ -222,7 +222,7 @@ route.post('/forgot_password', (req, res) => {
  * Se encontrado o token e o tempo limite so conferidos
  * Se (token === user.token e tempoLimite < agora) => usuario é atualizado
  */
-route.post('/reset_password', (req, res) => {
+route.patch('/reset_password', (req, res) => {
   const { token, email, password } = req.body;
   if (!token) return res.status(400).send({ error: 'Token no provided' });
   if (!password) return res.status(400).send({ error: 'Password not provided' });

@@ -36,7 +36,7 @@ route.post('/create', (req, res) => {
  * Se encontrar o mesmo id no banco é descartada a query
  * PUSHES.USERS + USER_ID fornecido, TIMES + 1
  */
-route.post('/push', (req, res) => {
+route.patch('/push', (req, res) => {
   const { assignedTo, postId } = req.body;
   if (!assignedTo && !postId) return res.status(400).send({ error: 'Query malformated' });
   Post.findById({ _id: postId }).then(post => {
@@ -62,7 +62,7 @@ route.post('/push', (req, res) => {
  * É atualizado o campo COMMENTS com os antigos comentarios
  * E adicionado um novo objeto com conteudo e USER_ID de quem o fez
  */
-route.post('/comment', (req, res) => {
+route.patch('/comment', (req, res) => {
   const { assignedTo, postId, content } = req.body;
   if (!assignedTo && !postId && !content) return res.status(400).send({ error: 'Query malformated' });
   Post.findById({ _id: postId }).then(post => {
