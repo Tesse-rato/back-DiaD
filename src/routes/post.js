@@ -95,27 +95,38 @@ route.get('/list', (req, res) => {
 });
 
 /**
+ * Delete um post por ID recebe o POST_ID
+ * Busca na base pelo post referente ao id
+ * Se encontra ele busca o usuario assinado ao post
+ * Itera pelos posts do usuario
+ * Referencia uma variavel apenas com os posts diferente do POST_ID
+ * Depois atualiza o usuário com a nova lista de posts sem aquele post
+ */
+route.delete('/delete/:id', (req, res) => {
+  Post.findByIdAndRemove(req.params.id).then(post => {
+    User.findById({ _id: post.assignedTo }).then(user => {
+      const userPosts = user.posts;
+      const newPosts = []
+      userPosts.find(post => {
+        if (post != post._id) newPosts = post;
+      });
+      user.updateOne({ posts: newPosts }, (err) => {
+        if (err) return res.status(500).send({ error: 'Error on update user posts, try again' });
+        return res.send();
+      });
+    });
+  }).catch(err => {
+    res.status(400).send({ error: 'Post not found' });
+  });
+});
+
+/**
  * Apenas deleta todos POSTS para debug
  */
 route.delete('/delete/all', (req, res) => {
   Post.deleteMany().then(() => {
     res.send({ message: 'Success' });
   });
-});
-
-route.delete('/delete/:id', (req, res) => {
-  const _id = req.params.id;
-  console.log(_id);
-
-  Post.findById({ _id }).then(post => {
-    console.log(post);
-    User.findById({ _id: post.assignedTo }).then(user => {
-      res.send();
-      console.log(user);
-    })
-  });
-
-
 });
 
 module.exports = route;
