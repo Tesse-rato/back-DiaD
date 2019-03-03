@@ -207,7 +207,7 @@ route.post('/reset_password', (req, res) => {
 })
 
 //------------------------------------------------------------------------------------//
-route.delete('/remove/all', (req, res) => {
+route.delete('/delete/all', (req, res) => {
   User.deleteMany({}).then(() => {
     res.send({ remove: 'all' });
   });

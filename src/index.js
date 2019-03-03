@@ -2,7 +2,7 @@ const express = require('express')();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
-const middlewareAuth = require('./middleware/auth');
+const middlewareAuth = require('./middleware');
 const env = require('./environment');
 
 const userRoutes = require('./routes/user');
