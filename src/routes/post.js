@@ -82,16 +82,9 @@ route.post('/comment', (req, res) => {
  * Apenas lista o posts para debug
  */
 route.get('/list', (req, res) => {
-  Post.find()
-    .populate({
-      path: 'assignedTo',
-      populate: {
-        path: 'posts'
-      }
-    })
-    .then(posts => {
-      res.send(posts);
-    });
+  Post.find().then(posts => {
+    res.send(posts);
+  });
 });
 
 /**

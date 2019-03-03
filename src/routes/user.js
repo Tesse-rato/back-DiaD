@@ -2,11 +2,14 @@ const route = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const sharp = require('sharp');
+const fs = require('fs');
 
 const User = require('../models/userModel');
 const Post = require('../models/postModel');
 const env = require('../environment/index');
 const sendMail = require('../mail');
+const uploadMiddleware = require('../upload');
 
 //------------------------------------------------------------------------------------//
 /**
@@ -91,6 +94,49 @@ route.post('/create', (req, res) => {
   });
 });
 
+/**
+ * Pofile photo recebe um multiparti-form, no middleware é buscado o USER_ID
+ * Se o ID nao for encontrado na base de dados...
+ * req.upload é setado para <true> e a imagem vai para uma pasta de lixo no disco rigido
+ * Se o usuário for encontrado na base de dados a middleware segue em frente
+ * É levado uma referencia do usuario encontrada na base de dados pelo middleware
+ * É pegado o destino da foto e também o nome da foto para atualizar os campos do usuário
+ * Usuário tem dois campos [originalPhoto, thumbnail] que acompanha o link da imagem em disco
+ * Sempre que a rota é chamada, é apagado as antigas fotos em disco para otimizar espaço
+ */
+route.post('/profilePhoto/:id', uploadMiddleware, (req, res) => {
+  if (req.uploadError) return res.status(400).send({ error: 'User not found' });
+
+  const user = req.user;
+  const { photo: { thumbnail, originalPhoto } } = user;
+
+  const { destination, filename } = req.file;
+  const pathPhotoOriginal = `${destination}/${filename}`;
+  const partsName = filename.split('-');
+  const thumbnailName = `thumbnail-${partsName[1]}-${partsName[2]}`;
+
+  const thumbnailCut = thumbnail.split('/');
+  const originalPhotoCut = originalPhoto.split('/');
+  fs.unlink(`${env.diskStorage}/${thumbnailCut[3]}`, () => null);
+  fs.unlink(`${env.diskStorage}/${originalPhotoCut[3]}`, () => null);
+
+  sharp(pathPhotoOriginal)
+    .resize(120)
+    .toFile(`${destination}/${thumbnailName}`)
+    .then(() => {
+      user.update({
+        photo: {
+          originalPhoto: `${env.dbStatic}/${filename}`,
+          thumbnail: `${env.dbStatic}/${thumbnailName}`
+        }
+      }, (err) => {
+        if (err) return res.status(500).send({ error: 'Error on setting profile image' });
+        res.send();
+      });
+    });
+});
+
+
 //------------------------------------------------------------------------------------//
 /**
  * Auth primeiro verifica se o usuário foreneceu os dados necessarios
@@ -158,15 +204,15 @@ route.post('/forgot_password', (req, res) => {
           return res.send({ status: 'Success', info });
         }).catch(err => {
           return res.status(500).send({ error: 'Error on send e-mail, try again' });
-        })
+        });
       }).catch(err => {
         return res.status(500).send({ error: 'Error in updating user token to reset password ' });
-      })
+      });
     }
   }).catch(err => {
     res.status(400).send({ error: 'User not found ' });
-  })
-})
+  });
+});
 
 //------------------------------------------------------------------------------------//
 /**
@@ -204,8 +250,8 @@ route.post('/reset_password', (req, res) => {
     .catch(err => {
       console.log(err);
       return res.status(400).send({ error: 'User not found' });
-    })
-})
+    });
+});
 
 /**
  * Delete User recebe um USER_ID
@@ -224,7 +270,7 @@ route.delete('/delete/:id', (req, res) => {
   }).catch(err => {
     console.log(err);
     res.status(400).send({ error: 'User not found' });
-  })
+  });
 });
 
 //------------------------------------------------------------------------------------//
