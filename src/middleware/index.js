@@ -5,7 +5,7 @@ const allowedRoutes = ['auth', 'create', 'reset_password', 'forgot_password'];
 const tokenRoutes = [
   'list', 'create', 'push',
   'comment', 'delete', 'delete_all',
-  'profilePhoto'
+  'profilePhoto', 'edit'
 ];
 
 module.exports = (req, res, next) => {

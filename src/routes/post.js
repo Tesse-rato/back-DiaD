@@ -29,6 +29,29 @@ route.post('/create', (req, res) => {
   });
 });
 
+
+/**
+ * Atualizar um post apenas recebe o POST_ID && CONTENT && USER_ID novo pra ser atualizado
+ * Busca na base de dados o post em si
+ * Se encontrado e aplicado o novo conteúdo no post sem alterar o restante dos campos
+ */
+route.put('/edit', (req, res) => {
+  const { postId, content, userId } = req.body;
+
+  Post.findById({ _id: postId }).then(post => {
+    if (!post) return res.status(400).send({ error: 'Post not found' });
+    if (userId != post.assignedTo) return res.status(400).send({ error: 'User and assigendPost not match' });
+
+    post.update({ content }, err => {
+      if (err) return res.status(500).send({ error: 'Error on updating post, try again' });
+      res.send();
+    })
+
+  }).catch(err => {
+    res.status(400).send({ error: 'POST_ID malformated' });
+  })
+});
+
 /**
  * Post Push recebe um USER_ID && POST_ID
  * Primeiro ele verifica as entradas. Entao ele busca no banco pelo id do post 
