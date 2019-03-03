@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 const User = require('../models/userModel');
+const Post = require('../models/postModel');
 const env = require('../environment/index');
 const sendMail = require('../mail');
 
@@ -206,8 +207,28 @@ route.post('/reset_password', (req, res) => {
     })
 })
 
+/**
+ * Delete User recebe um USER_ID
+ * Verifica na base se esse usuario existe e o deleta
+ * O metodo delete retorna o usuario deletado
+ * Itero pelo campo do posts do usuario deletado
+ * Invoco o metodo delete do post passando os POST_ID que pertenciam aquele usuário
+ */
+route.delete('/delete/:id', (req, res) => {
+  User.findByIdAndRemove({ _id: req.params.id }).then(user => {
+    userPosts = user.posts;
+    userPosts.map(post => {
+      Post.findByIdAndRemove({ _id: post }).then(() => null);
+    });
+    return res.send();
+  }).catch(err => {
+    console.log(err);
+    res.status(400).send({ error: 'User not found' });
+  })
+});
+
 //------------------------------------------------------------------------------------//
-route.delete('/delete/all', (req, res) => {
+route.delete('/delete_all', (req, res) => {
   User.deleteMany({}).then(() => {
     res.send({ remove: 'all' });
   });

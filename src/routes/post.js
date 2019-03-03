@@ -123,7 +123,7 @@ route.delete('/delete/:id', (req, res) => {
 /**
  * Apenas deleta todos POSTS para debug
  */
-route.delete('/delete/all', (req, res) => {
+route.delete('/delete_all', (req, res) => {
   Post.deleteMany().then(() => {
     res.send({ message: 'Success' });
   });

@@ -15,3 +15,4 @@ DELETE | ::1 | /posts/delete/id=5c7b183254bd8e40f8d62fee | Sat Mar 02 2019 21:51
 DELETE | ::1 | /posts/delete/5c7b183254bd8e40f8d62fee | Sat Mar 02 2019 21:52:14 GMT-0300 (GMT-03:00)
 GET | ::1 | /euSouUmHackerMal | Sat Mar 02 2019 22:33:28 GMT-0300 (GMT-03:00)
 GET | ::1 | /euSouUmHackerMal | Sat Mar 02 2019 22:34:27 GMT-0300 (GMT-03:00)
+DELETE | ::1 | /posts/delete_all/ | Sat Mar 02 2019 23:07:02 GMT-0300 (GMT-03:00)
