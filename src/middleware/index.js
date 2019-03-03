@@ -2,7 +2,11 @@ const authorization = require('./authorization');
 const generateLog = require('./generateLog');
 
 const allowedRoutes = ['auth', 'create', 'reset_password', 'forgot_password'];
-const tokenRoutes = ['list', 'create', 'push', 'comment', 'delete', 'delete_all', 'profilePhoto'];
+const tokenRoutes = [
+  'list', 'create', 'push',
+  'comment', 'delete', 'delete_all',
+  'profilePhoto'
+];
 
 module.exports = (req, res, next) => {
   const route = req.path.split('/');

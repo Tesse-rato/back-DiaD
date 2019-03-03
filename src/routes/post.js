@@ -39,20 +39,55 @@ route.post('/create', (req, res) => {
 route.patch('/push', (req, res) => {
   const { assignedTo, postId } = req.body;
   if (!assignedTo && !postId) return res.status(400).send({ error: 'Query malformated' });
+
   Post.findById({ _id: postId }).then(post => {
-    post.pushes.users.find(user => {
-      if (user == assignedTo) return res.status(400).send({ error: 'Users already push' });
-    });
+    let exists = false;
+    post.pushes.users.map(user => { user == assignedTo ? exists = true : null; });
+
+    if (exists) return res.status(400).send({ error: 'User already pushing it' });
+
     const times = post.pushes.times + 1;
     const users = [...post.pushes.users, assignedTo];
     const pushes = { times, users };
+
     post.updateOne({ pushes }, (err) => {
-      if (err) return res.status(500).send({ error: 'Error on pushes update try again' });
+      if (err) return res.status(400).send({ error: 'POST_ID malformated' });
       res.send();
     });
+
   }).catch(err => {
-    res.status(400).send(err, { error: 'Post not found' });
+    res.status(400).send({ error: 'Post not found' });
   });
+});
+
+
+/**
+ * Delete push recebe o POST_ID && USER_ID
+ * Encontrando o post na base de dados
+ * É iterado pelos PUSHES para encontrar o usuario que empurrou o post
+ * Se o id for diferente do usuario que ta removendo seu push
+ * É colocado num payload para atualizar o campo de pushes do post
+ */
+route.delete('/push', (req, res) => {
+  const { postId, assignedTo } = req.body;
+
+  Post.findById({ _id: postId }).then(post => {
+    if (!post) return res.status(400).send({ error: 'Post not found' });
+
+    let payload = { pushes: { times: post.pushes.times, users: [] } }
+    if (payload.pushes.times > 0) payload.pushes.times--;
+
+    post.pushes.users.map(user => (user != assignedTo) ? payload.users.push(user) : null);
+
+    post.update(payload, (err) => {
+      if (err) return res.status(500).send({ error: 'Error on pushes update, try again' });
+      res.send();
+    });
+
+  }).catch(err => {
+    console.log(err);
+    res.status(400).send({ error: 'Push_id malformated' });
+  })
 });
 
 /**
@@ -122,12 +157,10 @@ route.delete('/delete/:id', (req, res) => {
  * Um payload recebe todos comentarios que forem diferente do COMMENT_ID a ser removido
  * No final o post é atualizado com o novo payload
  */
-route.delete('/comment/:id', (req, res) => {
-  console.log('Toaqui');
-  const id = req.params.id;
-  const { commentId } = req.body;
+route.delete('/comment', (req, res) => {
+  const { commentId, postId } = req.body;
 
-  Post.findOne({ _id: id }).then(post => {
+  Post.findOne({ _id: postId }).then(post => {
     if (!post) return res.status(400).send({ error: 'Post not found' });
 
     let payload = [];
