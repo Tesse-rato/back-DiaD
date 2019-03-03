@@ -113,6 +113,37 @@ route.delete('/delete/:id', (req, res) => {
   });
 });
 
+
+/**
+ * Delete comment Recebe um POST_ID no parametro da rota
+ * No body da requisição ele recebe o COMMENT_ID que sera removido
+ * É buscado no banco de dados o post que contem o comentario a ser removido
+ * Se encontrado o campo de comments do post é iterado
+ * Um payload recebe todos comentarios que forem diferente do COMMENT_ID a ser removido
+ * No final o post é atualizado com o novo payload
+ */
+route.delete('/comment/:id', (req, res) => {
+  console.log('Toaqui');
+  const id = req.params.id;
+  const { commentId } = req.body;
+
+  Post.findOne({ _id: id }).then(post => {
+    if (!post) return res.status(400).send({ error: 'Post not found' });
+
+    let payload = [];
+    post.comments.map(comment => { if (comment._id != commentId) payload.push(comment); });
+
+    post.update({ comments: payload }, (err) => {
+      if (err) return res.status(500).send({ error: 'Error on comments update, try again' });
+      res.send()
+    });
+
+  }).catch(err => {
+    console.log(err);
+    res.status(400).send({ error: 'Id malformated' });
+  });
+});
+
 /**
  * Apenas deleta todos POSTS para debug
  */
