@@ -66,6 +66,7 @@ route.get('/list', (req, res) => {
   });
 });
 
+//------------------------------------------------------------------------------------//
 /**
  * Create User primeiro confirma os campos preenchidos
  * Após verifica no banco de dados se aquele email já esta cadastrado
@@ -94,6 +95,7 @@ route.post('/create', (req, res) => {
   });
 });
 
+//------------------------------------------------------------------------------------//
 /**
  * Pofile photo recebe um multiparti-form, no middleware é buscado o USER_ID
  * Se o ID nao for encontrado na base de dados...
@@ -136,6 +138,36 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
     });
 });
 
+//------------------------------------------------------------------------------------//
+/**
+ * Edit perfil de usuário recebe um USER_ID para buscar no banco
+ * Metodo PUT porque recebe todas informações novamente como email
+ * Busca ID no banco se encontrado o user é atualizado com os novos dados
+ */
+route.put('/edit', (req, res) => {
+  const {
+    userId,
+    bio,
+    email,
+    name: { first, last, nickname },
+  } = req.body;
+  User.findById({ _id: userId }).then(user => {
+    if (!user) return res.status(400).send({ error: 'User not found' });
+    console.log(user);
+    user.update({
+      bio,
+      email,
+      name: { first, last, nickname }
+    }, (err) => {
+      if (err) return res.status(500).send({ error: 'Error um updating user' });
+      return res.send();
+    });
+
+  }).catch(err => {
+    console.log(err);
+    res.status(400).send({ error: 'Upload malformated' });
+  });
+});
 
 //------------------------------------------------------------------------------------//
 /**
