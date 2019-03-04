@@ -1,6 +1,11 @@
 const route = require('express').Router();
+const sharp = require('sharp');
+const fs = require('fs');
+
 const Post = require('../models/postModel');
 const User = require('../models/userModel');
+const upload = require('../upload');
+const env = require('../environment');
 
 /**
  * Criando um post recebe um USER_ID para assinar ao post
@@ -29,6 +34,31 @@ route.post('/create', (req, res) => {
   });
 });
 
+/**
+ * Upload de photo recebe no body multi-parti-form a imagem
+ * Na rota recebe o POST_ID do post que vai ser atualizado
+ * A imagem passa pelo middleware para ser salvo no disco
+ * Apos isso vem pro controler pra ser redimencionada 
+ * Apos redensionar e dar um novo nome para imagem...
+ * é atualizado o campo de photo do POST
+ */
+route.patch('/postPhoto/:id', upload, (req, res) => {
+  const { destination, filename } = req.file;
+  const pathOriginal = `${destination}/${filename}`;
+  const partsFileName = filename.split('-');
+  const newFileName = `otimized-${partsFileName[1]}-${partsFileName[2]}`
+
+
+  sharp(pathOriginal)
+    .resize(600)
+    .toFile(`${destination}/${newFileName}`)
+    .then(() => {
+      req.post.update({ photo: `${env.dbStatic}/${newFileName}` }, (err) => {
+        if (err) return res.status(500).send({ error: 'Error on updating photo path' });
+        res.send()
+      });
+    });
+});
 
 /**
  * Atualizar um post apenas recebe o POST_ID && CONTENT && USER_ID novo pra ser atualizado
@@ -154,8 +184,13 @@ route.get('/list', (req, res) => {
  * Depois atualiza o usuário com a nova lista de posts sem aquele post
  */
 route.delete('/delete/:id', (req, res) => {
-  Post.findByIdAndRemove(req.params.id).then(post => {
+  Post.findByIdAndRemove({ _id: req.params.id }).then(post => {
+    if (!post) return res.status(400).send({ error: 'Post not found' });
+
+    const partsNamePhoto = post.photo.split('/');
+    fs.unlink(`${env.diskStorage}/${partsNamePhoto[3]}`, () => null);
     User.findById({ _id: post.assignedTo }).then(user => {
+      console.log(user, 'USER');
       const userPosts = user.posts;
       const newPosts = []
       userPosts.find(post => {
