@@ -53,6 +53,7 @@ route.patch('/postPhoto/:id', upload, (req, res) => {
     .resize(600)
     .toFile(`${destination}/${newFileName}`)
     .then(() => {
+      fs.unlink(pathOriginal, () => null);
       req.post.update({ photo: `${env.dbStatic}/${newFileName}` }, (err) => {
         if (err) return res.status(500).send({ error: 'Error on updating photo path' });
         res.send()
