@@ -17,21 +17,21 @@ route.post('/create', (req, res) => {
   const { assignedTo, content } = req.body;
   if (!assignedTo) return res.status(400).send({ error: 'No User provided' });
   if (!content) return res.status(400).send({ error: 'Content is required' });
+
   User.findById({ _id: assignedTo }).then(user => {
+    if (!user) return res.status(400).send({ error: 'User not found' });
+
     Post.create({ assignedTo, content }).then(post => {
       const posts = user.posts;
       posts.push(post._id);
-      user.updateOne({ posts }, (err) => {
+
+      user.update({ posts }, (err) => {
         if (err) return res.status(500).send({ error: 'Error on user update, try again' });
-        res.send();
+        return res.send();
       });
-    }).catch(err => {
-      console.log(err);
-      res.status(500).send({ error: 'Error on post create, try again' });
-    });
-  }).catch(err => {
-    res.send(400).send({ error: 'User id not found' });
-  });
+
+    }).catch(err => res.status(500).send({ error: 'Error on post create, try again' }));
+  }).catch(err => res.send(400).send({ error: 'Request malformated' }));
 });
 
 /**
@@ -43,11 +43,12 @@ route.post('/create', (req, res) => {
  * é atualizado o campo de photo do POST
  */
 route.patch('/postPhoto/:id', upload, (req, res) => {
+  if (req.uploadError) return res.status(400).send({ error: 'Post not found' });
+
   const { destination, filename } = req.file;
   const pathOriginal = `${destination}/${filename}`;
   const partsFileName = filename.split('-');
   const newFileName = `otimized-${partsFileName[1]}-${partsFileName[2]}`
-
 
   sharp(pathOriginal)
     .resize(600)
@@ -78,9 +79,7 @@ route.put('/edit', (req, res) => {
       res.send();
     })
 
-  }).catch(err => {
-    res.status(400).send({ error: 'POST_ID malformated' });
-  })
+  }).catch(err => res.status(400).send({ error: 'POST_ID malformated' }));
 });
 
 /**
@@ -92,13 +91,14 @@ route.put('/edit', (req, res) => {
  */
 route.patch('/push', (req, res) => {
   const { assignedTo, postId } = req.body;
-  if (!assignedTo && !postId) return res.status(400).send({ error: 'Query malformated' });
+  if (!assignedTo && !postId) return res.status(400).send({ error: 'Request malformated' });
 
   Post.findById({ _id: postId }).then(post => {
-    let exists = false;
-    post.pushes.users.map(user => { user == assignedTo ? exists = true : null; });
+    if (!post) return res.status(400).send({ error: 'Post not found' });
 
-    if (exists) return res.status(400).send({ error: 'User already pushing it' });
+    for (let user of post.pushes.users) {
+      if (user == assignedTo) return res.status(400).send({ error: 'User already pushing it' });
+    }
 
     const times = post.pushes.times + 1;
     const users = [...post.pushes.users, assignedTo];
@@ -109,9 +109,7 @@ route.patch('/push', (req, res) => {
       res.send();
     });
 
-  }).catch(err => {
-    res.status(400).send({ error: 'Post not found' });
-  });
+  }).catch(err => res.status(400).send({ error: 'Post not found' }));
 });
 
 
@@ -129,7 +127,8 @@ route.delete('/push', (req, res) => {
     if (!post) return res.status(400).send({ error: 'Post not found' });
 
     let payload = { pushes: { times: post.pushes.times, users: [] } }
-    if (payload.pushes.times > 0) payload.pushes.times--;
+
+    payload.pushes.times > 0 ? payload.pushes.times-- : null;
 
     post.pushes.users.map(user => (user != assignedTo) ? payload.users.push(user) : null);
 
@@ -138,10 +137,7 @@ route.delete('/push', (req, res) => {
       res.send();
     });
 
-  }).catch(err => {
-    console.log(err);
-    res.status(400).send({ error: 'Push_id malformated' });
-  })
+  }).catch(err => res.status(400).send({ error: 'Push_id malformated' }));
 });
 
 /**
@@ -154,16 +150,17 @@ route.delete('/push', (req, res) => {
 route.patch('/comment', (req, res) => {
   const { assignedTo, postId, content } = req.body;
   if (!assignedTo && !postId && !content) return res.status(400).send({ error: 'Query malformated' });
+
   Post.findById({ _id: postId }).then(post => {
     const comment = { assignedTo, content };
     const comments = [...post.comments, comment];
-    post.updateOne({ comments }, (err) => {
+
+    post.update({ comments }, (err) => {
       if (err) return res.status(500).send({ error: 'Error on comment update, try again' });
       res.send({ message: 'Update successfully' });
     });
-  }).catch(err => {
-    res.status(400).send({ error: 'Post not found' });
-  })
+
+  }).catch(err => res.status(400).send({ error: 'Post not found' }));
 });
 
 
@@ -184,27 +181,27 @@ route.get('/list', (req, res) => {
  * Referencia uma variavel apenas com os posts diferente do POST_ID
  * Depois atualiza o usuário com a nova lista de posts sem aquele post
  */
-route.delete('/delete/:id', (req, res) => {
-  Post.findByIdAndRemove({ _id: req.params.id }).then(post => {
-    if (!post) return res.status(400).send({ error: 'Post not found' });
+route.delete('/delete', (req, res) => {
+  Post.findById({ _id: req.body.id }).then(post => {
+    if (!post) return res.status(400).send({ error: 'Post not foundeeeee' });
 
-    const partsNamePhoto = post.photo.split('/');
-    fs.unlink(`${env.diskStorage}/${partsNamePhoto[3]}`, () => null);
+    if (post.photo) {
+      const partsNamePhoto = post.photo.split('/');
+      fs.unlink(`${env.diskStorage}/${partsNamePhoto[3]}`, () => null);
+    }
+
     User.findById({ _id: post.assignedTo }).then(user => {
-      console.log(user, 'USER');
-      const userPosts = user.posts;
-      const newPosts = []
-      userPosts.find(post => {
-        if (post != post._id) newPosts = post;
-      });
-      user.updateOne({ posts: newPosts }, (err) => {
+      if (!user) return res.status(206).send({ error: 'Error to find user on data base' });
+
+      let payload = user.posts.filter(userPost => userPost.toString() != post._id.toString());
+
+      user.update({ posts: payload }, (err) => {
         if (err) return res.status(500).send({ error: 'Error on update user posts, try again' });
-        return res.send();
+        Post.findOneAndRemove({ _id: post._id }).then(() => res.send());
       });
-    });
-  }).catch(err => {
-    res.status(400).send({ error: 'Post not found' });
-  });
+
+    }).catch(err => res.status(400).send({ error: 'User assigned to post not found on data base' }));
+  }).catch(err => res.status(400).send({ error: 'Request malformated' }));
 });
 
 
@@ -230,10 +227,7 @@ route.delete('/comment', (req, res) => {
       res.send()
     });
 
-  }).catch(err => {
-    console.log(err);
-    res.status(400).send({ error: 'Id malformated' });
-  });
+  }).catch(err => res.status(400).send({ error: 'Id malformated' }));
 });
 
 /**

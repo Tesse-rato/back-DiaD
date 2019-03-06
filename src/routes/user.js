@@ -43,15 +43,15 @@ const validateUser = (form = {}) => {
       } else
         reject({ error: 'Password not match' });
     } else if (!email) {
-      reject({ erro: 'Email not provided' });
+      reject({ error: 'Email not provided' });
     } else if (!password || !confirmPassword) {
-      reject({ erro: 'PassWord or ConfirmPassWord not provided' });
+      reject({ error: 'PassWord or ConfirmPassWord not provided' });
     } else if (!first) {
-      reject({ erro: 'First name not provided' });
+      reject({ error: 'First name not provided' });
     } else if (!last) {
-      reject({ erro: 'Last name not provided' });
+      reject({ error: 'Last name not provided' });
     } else if (!nickname) {
-      reject({ erro: 'Nickname name not provided' });
+      reject({ error: 'Nickname name not provided' });
     }
   });
 };
@@ -75,24 +75,20 @@ route.get('/list', (req, res) => {
 route.post('/create', (req, res) => {
   validateUser(req.body).then((email) => {
     User.findOne({ email }).then((user) => {
-      if (user) {
-        return res.status(400).send({ error: 'User already exists' });
-      }
+      if (user) return res.status(400).send({ error: 'User already exists' });
+
       User.create(req.body).then((user) => {
         user.password = undefined;
+
         generateToken({ id: user._id }, (err, token) => {
-          if (err) {
-            return res.status(400).send({ error: 'Error on generate token' });
-          }
+          if (err) return res.status(400).send({ error: 'Error on generate token' });
+
           res.status(201).send({ user, token });
         });
-      }).catch(err => {
-        res.status(500).send({ error: 'Error on create user' });
-      });
-    });
-  }).catch(err => {
-    res.status(400).send(err);
-  });
+
+      }).catch(err => res.status(500).send({ error: 'Error on create user' }));
+    }).catch(err => res.status(400).send({ error: 'Input malformated' }));
+  }).catch(err => res.status(400).send(err));
 });
 
 //------------------------------------------------------------------------------------//
@@ -151,9 +147,12 @@ route.put('/edit', (req, res) => {
     email,
     name: { first, last, nickname },
   } = req.body;
+
+  if (!userId || !email || !first || !last || !nickname) return res.status(400).send({ error: 'Input malformated' });
+
   User.findById({ _id: userId }).then(user => {
     if (!user) return res.status(400).send({ error: 'User not found' });
-    console.log(user);
+
     user.update({
       bio,
       email,
@@ -163,10 +162,7 @@ route.put('/edit', (req, res) => {
       return res.send();
     });
 
-  }).catch(err => {
-    console.log(err);
-    res.status(400).send({ error: 'Upload malformated' });
-  });
+  }).catch(err => res.status(400).send({ error: 'Upload malformated' }));
 });
 
 //------------------------------------------------------------------------------------//
@@ -178,6 +174,7 @@ route.put('/edit', (req, res) => {
  */
 route.post('/auth', (req, res) => {
   const { email, password } = req.body;
+
   if (!email || !password) {
     res.status(400);
     if (!email) {
@@ -186,25 +183,27 @@ route.post('/auth', (req, res) => {
       return res.send({ error: 'Password not provide' });
     }
   }
+
   User.findOne({ email }).select('+password').then((user) => {
-    if (!user) {
-      return res.status(400).send({ error: 'User not found' });
-    }
+    if (!user) return res.status(400).send({ error: 'User not found' });
+
     bcrypt.compare(password, user.password, (err, resultado) => {
       if (err) {
         return res.status(401).send({ error: 'Error login, try again' });
       } else if (!resultado) {
         return res.status(401).send({ error: 'Invalid password' })
       }
+
       user.password = undefined;
+
       generateToken({ id: user._id }, (err, token) => {
-        if (err) return res.status(400).send({ erro: 'Error on generate token' });
+        if (err) return res.status(400).send({ error: 'Error on generate token' });
+
         res.send({ user, token });
-        // jwt expired -> erro retornado quando expira o token
-        //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVjNzNjYTE0NGRhOTViMjc0NDg1NmFiYSIsImlhdCI6MTU1MTA5MzM1NiwiZXhwIjoxNTUxMTc5NzU2fQ.5pi3Hsgz5KWb55QPEjyq1lEX76xPALcfW7JV-Nv-re4 
+        // jwt expired -> erro retornado quando expira o token //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVjNzNjYTE0NGRhOTViMjc0NDg1NmFiYSIsImlhdCI6MTU1MTA5MzM1NiwiZXhwIjoxNTUxMTc5NzU2fQ.5pi3Hsgz5KWb55QPEjyq1lEX76xPALcfW7JV-Nv-re4 
       });
     });
-  });
+  }).catch(err => res.status(400).send({ error: 'Input malformated' }));
 });
 
 //------------------------------------------------------------------------------------//
@@ -215,35 +214,31 @@ route.post('/auth', (req, res) => {
  * Após isso o certo e-mail recebe o token no seu respectivo e-mail e já pode ir pra proxima rota
  */
 route.post('/forgot_password', (req, res) => {
-  const { email } = req.body;
 
-  User.findOne({ email }).select('+password').then((user) => {
-    if (user) {
-      const token = crypto.randomBytes(32).toString('HEX');
-      const date = new Date()
-      date.setHours(date.getHours() + 1);
-      const newUser = {
-        __v: user.__v,
-        _id: user.id,
-        name: user.name,
-        email: user.email,
-        password: user.password,
-        tokenForgotPassword: token,
-        tokenForgotExpires: date.toString()
-      }
-      User.findByIdAndUpdate({ _id: user.id }, newUser).then(() => {
-        sendMail(user.email, token).then(info => {
-          return res.send({ status: 'Success', info });
-        }).catch(err => {
-          return res.status(500).send({ error: 'Error on send e-mail, try again' });
-        });
-      }).catch(err => {
-        return res.status(500).send({ error: 'Error in updating user token to reset password ' });
-      });
+  User.findOne({ email: req.body.email }).select('+password').then((user) => {
+    if (!user) return res.status(400).send({ error: 'User not found' });
+
+    const token = crypto.randomBytes(32).toString('HEX');
+    const date = new Date()
+    date.setHours(date.getHours() + 1);
+
+    const newUser = {
+      __v: user.__v,
+      _id: user.id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      tokenForgotPassword: token,
+      tokenForgotExpires: date.toString()
     }
-  }).catch(err => {
-    res.status(400).send({ error: 'User not found ' });
-  });
+
+    User.findByIdAndUpdate({ _id: user.id }, newUser).then(() => {
+      sendMail(user.email, token).then(info => {
+        return res.send({ message: 'Success', info });
+
+      }).catch(err => res.status(500).send({ error: 'Error on send e-mail, try again' }));
+    }).catch(err => res.status(500).send({ error: 'Error in updating user token to reset password' }));
+  }).catch(err => res.status(400).send({ error: 'Request malformated' }));
 });
 
 //------------------------------------------------------------------------------------//
@@ -259,7 +254,8 @@ route.patch('/reset_password', (req, res) => {
   if (!token) return res.status(400).send({ error: 'Token no provided' });
   if (!password) return res.status(400).send({ error: 'Password not provided' });
 
-  User.findOne({ email }).select('+password +tokenForgotPassword +tokenForgotExpires')
+  User.findOne({ email })
+    .select('+password +tokenForgotPassword +tokenForgotExpires')
     .then((user) => {
       const date = new Date();
       date.setHours(date.getHours());
@@ -268,21 +264,20 @@ route.patch('/reset_password', (req, res) => {
         user.password = password;
         user.tokenForgotExpires = undefined;
         user.tokenForgotPassword = undefined;
+
         user.save(err => {
           if (err) return res.status(500).send({ error: 'Error on update user password, try again' });
 
-          res.send({ status: 'User password has benn reset ' });
-        })
-      } else if (user.tokenForgotExpires > date.toString()) {
-        res.status(400).send({ error: 'Token expired, get a new one' });
-      } else {
-        res.status(400).send({ error: 'Token Invalid' });
+          return res.send({ status: 'User password has benn reset ' });
+        });
       }
-    })
-    .catch(err => {
-      console.log(err);
-      return res.status(400).send({ error: 'User not found' });
-    });
+      else if (user.tokenForgotExpires > date.toString()) {
+        return res.status(400).send({ error: 'Token expired, get a new one' });
+      }
+      else {
+        return res.status(400).send({ error: 'Token Invalid' });
+      }
+    }).catch(err => res.status(400).send({ error: 'User not found' }));
 });
 
 /**
@@ -295,14 +290,14 @@ route.patch('/reset_password', (req, res) => {
 route.delete('/delete/:id', (req, res) => {
   User.findByIdAndRemove({ _id: req.params.id }).then(user => {
     userPosts = user.posts;
+
     userPosts.map(post => {
       Post.findByIdAndRemove({ _id: post }).then(() => null);
     });
+
     return res.send();
-  }).catch(err => {
-    console.log(err);
-    res.status(400).send({ error: 'User not found' });
-  });
+
+  }).catch(err => res.status(400).send({ error: 'User not found' }));
 });
 
 //------------------------------------------------------------------------------------//

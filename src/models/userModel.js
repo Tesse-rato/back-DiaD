@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
       required: true
     }
   },
+  bio: String,
   photo: {
     thumbnail: String,
     originalPhoto: String
