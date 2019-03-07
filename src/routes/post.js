@@ -45,21 +45,32 @@ route.post('/create', (req, res) => {
 route.patch('/postPhoto/:id', upload, (req, res) => {
   if (req.uploadError) return res.status(400).send({ error: 'Post not found' });
 
+  const { photo } = req.model;
+
+  if (photo) {
+    const pathToPhoto = photo.split('/');
+    fs.unlink(`${env.diskStorage}/${pathToPhoto[3]}`, (err) => console.log(err));
+  }
+
   const { destination, filename } = req.file;
   const pathOriginal = `${destination}/${filename}`;
   const partsFileName = filename.split('-');
-  const newFileName = `otimized-${partsFileName[1]}-${partsFileName[2]}`
+  const newFileName = `optimized-${partsFileName[1]}-${partsFileName[2]}`
 
-  sharp(pathOriginal)
-    .resize(600)
-    .toFile(`${destination}/${newFileName}`)
-    .then(() => {
-      fs.unlink(pathOriginal, () => null);
-      req.post.update({ photo: `${env.dbStatic}/${newFileName}` }, (err) => {
-        if (err) return res.status(500).send({ error: 'Error on updating photo path' });
-        res.send()
-      });
-    });
+  fs.readFile(pathOriginal, (err, buffer) => {
+    if (err) return res.status(500).send({ error: 'Error on read file to resize' });
+
+    sharp(buffer)
+      .resize(600)
+      .toFile(`${destination}/${newFileName}`)
+      .then(() => {
+        fs.unlink(pathOriginal, () => null);
+        req.model.update({ photo: `${env.dbStatic}/${newFileName}` }, (err) => {
+          if (err) return res.status(500).send({ error: 'Error on updating photo path' });
+          res.send()
+        });
+      }).catch(err => res.status(500).send({ error: 'Error on resize image try again' }));
+  });
 });
 
 /**
