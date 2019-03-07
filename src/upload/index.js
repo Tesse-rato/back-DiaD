@@ -4,34 +4,25 @@ const env = require('../environment');
 const User = require('../models/userModel');
 const Post = require('../models/postModel');
 
+function selectStorage(model, req, cb) {
+  if (!model) {
+    req.uploadError = true
+    return cb(null, 'E:/diad/trash');
+  }
+  req.model = model;
+  return cb(null, env.diskStorage);
+}
+
 const multerOptions = {
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
       const partsPath = req.path.split('/');
 
-      if (partsPath[1] == 'profilePhoto') {
-        User.findById(req.params.id).then(user => {
-          if (!user) {
-            req.uploadError = true
-            return cb(null, 'E:/diad/trash');
-          }
-          req.user = user;
-          return cb(null, env.diskStorage);
-        }).catch(err => {
-          return cb(err);
-        });
+      if (partsPath[1] === 'profilePhoto') {
+        User.findById(req.params.id).then(model => selectStorage(model, req, cb)).catch(err => cb(err));
       }
-      else if (partsPath[1] == 'postPhoto') {
-        Post.findById(req.params.id).then(post => {
-          if (!post) {
-            req.uploadError = true
-            return cb(null, 'E:/diad/trash');
-          }
-          req.post = post;
-          return cb(null, env.diskStorage);
-        }).catch(err => {
-          return cb(err);
-        });
+      else if (partsPath[1] === 'postPhoto') {
+        Post.findById(req.params.id).then(model => selectStorage(model, req, cb)).catch(err => cb(err));
       }
     },
     filename: (req, file, cb) => {

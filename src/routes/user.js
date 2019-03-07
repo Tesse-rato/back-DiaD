@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const sharp = require('sharp');
 const fs = require('fs');
+const multer = require('multer');
 
 const User = require('../models/userModel');
 const Post = require('../models/postModel');
@@ -105,7 +106,7 @@ route.post('/create', (req, res) => {
 route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
   if (req.uploadError) return res.status(400).send({ error: 'User not found' });
 
-  const user = req.user;
+  const user = req.model;
   const { photo: { thumbnail, originalPhoto } } = user;
 
   const { destination, filename } = req.file;
@@ -113,29 +114,33 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
   const partsName = filename.split('-');
   const thumbnailName = `thumbnail-${partsName[1]}-${partsName[2]}`;
 
-  if (thumbnail && originalPhoto) {
-    const thumbnailCut = thumbnail.split('/');
+  if (originalPhoto) {
     const originalPhotoCut = originalPhoto.split('/');
-    fs.unlink(`${env.diskStorage}/${thumbnailCut[3]}`, (err) => {
-      console.log(err)
-      fs.unlink(`${env.diskStorage}/${originalPhotoCut[3]}`, (err) => console.log(err));
-    });
+    fs.unlink(`${env.diskStorage}/${originalPhotoCut[3]}`, (err) => console.log(err));
+  }
+  if (thumbnail) {
+    const thumbnailCut = thumbnail.split('/');
+    fs.unlink(`${env.diskStorage}/${thumbnailCut[3]}`, (err) => console.log(err));
   }
 
-  sharp(pathPhotoOriginal)
-    .resize(120)
-    .toFile(`${destination}/${thumbnailName}`)
-    .then(() => {
-      user.update({
-        photo: {
-          originalPhoto: `${env.dbStatic}/${filename}`,
-          thumbnail: `${env.dbStatic}/${thumbnailName}`
-        }
-      }, (err) => {
-        if (err) return res.status(500).send({ error: 'Error on setting profile image' });
-        return res.send();
-      });
-    });
+  fs.readFile(pathPhotoOriginal, (err, buffer) => {
+    if (err) return res.status(500).send({ error: 'Error on read file to resize' });
+
+    sharp(buffer)
+      .resize(120)
+      .toFile(`${destination}/${thumbnailName}`)
+      .then(() => {
+        user.update({
+          photo: {
+            originalPhoto: `${env.dbStatic}/${filename}`,
+            thumbnail: `${env.dbStatic}/${thumbnailName}`
+          }
+        }, (err) => {
+          if (err) return res.status(500).send({ error: 'Error on setting profile image' });
+          return res.send();
+        });
+      }).catch(err => res.status(400).send({ error: 'Error on load Image' }));
+  });
 });
 
 //------------------------------------------------------------------------------------//
