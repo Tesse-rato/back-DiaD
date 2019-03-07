@@ -113,10 +113,14 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
   const partsName = filename.split('-');
   const thumbnailName = `thumbnail-${partsName[1]}-${partsName[2]}`;
 
-  const thumbnailCut = thumbnail.split('/');
-  const originalPhotoCut = originalPhoto.split('/');
-  fs.unlink(`${env.diskStorage}/${thumbnailCut[3]}`, () => null);
-  fs.unlink(`${env.diskStorage}/${originalPhotoCut[3]}`, () => null);
+  if (thumbnail && originalPhoto) {
+    const thumbnailCut = thumbnail.split('/');
+    const originalPhotoCut = originalPhoto.split('/');
+    fs.unlink(`${env.diskStorage}/${thumbnailCut[3]}`, (err) => {
+      console.log(err)
+      fs.unlink(`${env.diskStorage}/${originalPhotoCut[3]}`, (err) => console.log(err));
+    });
+  }
 
   sharp(pathPhotoOriginal)
     .resize(120)
@@ -129,7 +133,7 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
         }
       }, (err) => {
         if (err) return res.status(500).send({ error: 'Error on setting profile image' });
-        res.send();
+        return res.send();
       });
     });
 });
