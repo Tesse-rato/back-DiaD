@@ -234,6 +234,24 @@ route.post('/auth', (req, res) => {
 });
 
 /**
+ * Validade token é so uma rota para passar pelo Middleware que valida o token
+ * Se for validado ela cai nessa funcao e é retornado status 200 de OK
+ * Se nao ela é rejeitada pelo middleware de validacao com erro de token expirado
+ */
+route.post('/validateToken', (req, res) => {
+  const { userId } = req.body;
+
+  User.findById({ _id: userId }).then(user => {
+    if (!user) return res.status(400).send({ error: 'User not found' });
+
+    res.send(user);
+
+  }).catch(err => {
+    console.log(err);
+  })
+
+});
+/**
  * Follow recebe um UserId de quem esta seguindo e um FollowId de quem ira seguir
  * Verifica na base de dados de o userId existe no bando
  * Se existir o campo de following recebe o novo FollowId de quem ira seguir

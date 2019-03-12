@@ -6,7 +6,7 @@ const tokenRoutes = [
   'list', 'create', 'push',
   'comment', 'delete', 'delete_all',
   'profilePhoto', 'edit', 'postPhoto',
-  'follow', 'unfollow'
+  'follow', 'unfollow', 'validateToken'
 ];
 
 module.exports = (req, res, next) => {
