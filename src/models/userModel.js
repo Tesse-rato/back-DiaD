@@ -17,8 +17,6 @@ const userSchema = new mongoose.Schema({
       unique: true,
     }
   },
-  bio: String,
-  city: String,
   photo: {
     thumbnail: String,
     originalPhoto: String
@@ -47,9 +45,14 @@ const userSchema = new mongoose.Schema({
   },
   posts: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Post',
-    select: false
-  }]
+    ref: 'Post'
+  }],
+  following: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  bio: String,
+  city: String,
 })
 
 userSchema.pre('save', function (next) {

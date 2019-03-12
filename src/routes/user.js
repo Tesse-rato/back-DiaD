@@ -228,6 +228,53 @@ route.post('/auth', (req, res) => {
   }).catch(err => res.status(400).send({ error: 'Input malformated' }));
 });
 
+route.post('/follow', (req, res) => {
+  const { userId, followUserId } = req.body;
+
+  if (!userId || !followUserId) return res.status(400).send({ error: 'Request malformated' });
+
+  User.findById({ _id: userId }).then(user => {
+    if (!user) return res.status(400).send({ error: 'User not found' });
+
+    const following = user.following;
+    following.push(followUserId);
+
+    user.update({ following }, () => {
+      res.send();
+    });
+
+  }).catch(err => {
+    res.status(400).send({ error: 'Request malformated' });
+    console.log(err);
+  })
+
+})
+
+route.post('/unfollow', (req, res) => {
+  const { userId, unfollowUserId } = req.body;
+
+  if (!userId || !unfollowUserId) return res.status(400).send({ error: 'UserId or UnfollowUserId not provided' });
+
+  User.findById({ _id: userId }).then(user => {
+    if (!user) return res.status(400).send({ error: 'User not found' });
+
+    console.log(user.following.length);
+
+    if (user.following.length) {
+      const following = user.following;
+      const payload = following.filter(followId => followId.toString() != unfollowUserId);
+
+      user.update({ following: payload }, (err) => {
+        if (err) return res.status(500).send({ error: 'Error on user updating' });
+
+        return res.send();
+      });
+    }
+    else {
+      return res.status(400).send({ error: 'User following empty' });
+    }
+  }).catch(err => res.send({ error: 'Request malformated' }));
+});
 //------------------------------------------------------------------------------------//
 /**
  * Users Forgot his Password
@@ -317,8 +364,6 @@ route.delete('/delete/:id', (req, res) => {
         Post.findByIdAndRemove({ _id: post }).then(() => null);
       });
     }
-    console.log(user);
-    console.log(user.photo);
     if (user.photo) {
       if (user.photo.thumbnail) {
         const partsToPhotoThumbnailPath = user.photo.thumbnail.split('/');
