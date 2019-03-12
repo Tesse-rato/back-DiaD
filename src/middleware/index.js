@@ -1,7 +1,7 @@
 const authorization = require('./authorization');
 const generateLog = require('./generateLog');
 
-const allowedRoutes = ['auth', 'create', 'reset_password', 'forgot_password'];
+const allowedRoutes = ['auth', 'create', 'reset_password', 'forgot_password', 'exists'];
 const tokenRoutes = [
   'list', 'create', 'push',
   'comment', 'delete', 'delete_all',

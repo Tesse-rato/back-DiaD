@@ -75,8 +75,11 @@ route.get('/list', (req, res) => {
  */
 route.post('/create', (req, res) => {
   validateUser(req.body).then((email) => {
-    User.findOne({ email }).then((user) => {
-      if (user) return res.status(400).send({ error: 'User already exists' });
+    User.find({ email }).then((user) => {
+      if (user.length) return res.status(400).send({ error: 'User already exists' });
+      console.log(user);
+
+      console.log(req.body);
 
       User.create(req.body).then((user) => {
         user.password = undefined;
@@ -87,11 +90,21 @@ route.post('/create', (req, res) => {
           res.status(201).send({ user, token });
         });
 
-      }).catch(err => res.status(500).send({ error: 'Error on create user' }));
+      }).catch(err => res.status(400).send({ error: 'Nickname already exists' }));
     }).catch(err => res.status(400).send({ error: 'Input malformated' }));
   }).catch(err => res.status(400).send(err));
 });
 
+route.get('/exists/:id', (req, res) => {
+  const email = req.params.id
+  console.log(email);
+  User.find({ email }).then(user => {
+    if (user.length) return res.status(400).send({ error: 'User already exists' });
+
+    return res.send({ message: 'User don\'t exists' });
+
+  }).catch(err => res.status(400).send({ error: 'Email malformated' }));
+});
 //------------------------------------------------------------------------------------//
 /**
  * Pofile photo recebe um multiparti-form, no middleware é buscado o USER_ID
@@ -115,12 +128,12 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
   const thumbnailName = `thumbnail-${partsName[1]}-${partsName[2]}`;
 
   if (originalPhoto) {
-    const originalPhotoCut = originalPhoto.split('/');
-    fs.unlink(`${env.diskStorage}/${originalPhotoCut[3]}`, (err) => console.log(err));
+    const partsToOriginalPath = originalPhoto.split('/');
+    fs.unlink(`${env.diskStorage}/${partsToOriginalPath[3]}`, (err) => console.log(err));
   }
   if (thumbnail) {
-    const thumbnailCut = thumbnail.split('/');
-    fs.unlink(`${env.diskStorage}/${thumbnailCut[3]}`, (err) => console.log(err));
+    const partsToThumbnailPath = thumbnail.split('/');
+    fs.unlink(`${env.diskStorage}/${partsToThumbnailPath[3]}`, (err) => console.log(err));
   }
 
   fs.readFile(pathPhotoOriginal, (err, buffer) => {
@@ -298,15 +311,31 @@ route.patch('/reset_password', (req, res) => {
  */
 route.delete('/delete/:id', (req, res) => {
   User.findByIdAndRemove({ _id: req.params.id }).then(user => {
-    userPosts = user.posts;
 
-    userPosts.map(post => {
-      Post.findByIdAndRemove({ _id: post }).then(() => null);
-    });
+    if (user.posts.length) {
+      user.posts.map(post => {
+        Post.findByIdAndRemove({ _id: post }).then(() => null);
+      });
+    }
+    console.log(user);
+    console.log(user.photo);
+    if (user.photo) {
+      if (user.photo.thumbnail) {
+        const partsToPhotoThumbnailPath = user.photo.thumbnail.split('/');
+        fs.unlink(`${env.diskStorage}/${partsToPhotoThumbnailPath[3]}`, () => null);
+      }
+      if (user.photo.originalPhoto) {
+        const partsToPhotoOriginalPath = user.photo.originalPhoto.split('/');
+        fs.unlink(`${env.diskStorage}/${partsToPhotoOriginalPath[3]}`, () => null);
+      }
+    }
 
     return res.send();
 
-  }).catch(err => res.status(400).send({ error: 'User not found' }));
+  }).catch(err => {
+    console.log(err);
+    res.status(400).send({ error: 'User not found' })
+  });
 });
 
 //------------------------------------------------------------------------------------//

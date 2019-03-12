@@ -13,10 +13,12 @@ const userSchema = new mongoose.Schema({
     },
     nickname: {
       type: String,
-      required: true
+      required: true,
+      unique: true,
     }
   },
   bio: String,
+  city: String,
   photo: {
     thumbnail: String,
     originalPhoto: String
