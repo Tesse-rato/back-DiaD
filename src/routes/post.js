@@ -137,18 +137,21 @@ route.delete('/push', (req, res) => {
   Post.findById({ _id: postId }).then(post => {
     if (!post) return res.status(400).send({ error: 'Post not found' });
 
-    let payload = { pushes: { times: post.pushes.times, users: [] } }
+    let payload = post;
 
-    payload.pushes.times > 0 ? payload.pushes.times-- : null;
+    payload.pushes.times--;
 
-    post.pushes.users.map(user => (user != assignedTo) ? payload.users.push(user) : null);
+    payload.pushes.users = payload.pushes.users.filter(user => user.toString() != assignedTo);
 
     post.update(payload, (err) => {
       if (err) return res.status(500).send({ error: 'Error on pushes update, try again' });
       res.send();
     });
 
-  }).catch(err => res.status(400).send({ error: 'Push_id malformated' }));
+  }).catch(err => {
+    console.log(err);
+    return res.status(400).send({ error: 'Push_id malformated' })
+  });
 });
 
 /**
@@ -179,9 +182,14 @@ route.patch('/comment', (req, res) => {
  * Apenas lista o posts para debug
  */
 route.get('/list', (req, res) => {
-  Post.find().then(posts => {
-    res.send(posts);
-  });
+  Post.find()
+    .populate({ path: 'assignedTo', select: 'photo name' })
+    .populate({ path: 'comments.assignedTo', select: 'photo name' })
+
+
+    .then(posts => {
+      res.send(posts);
+    });
 });
 
 /**
