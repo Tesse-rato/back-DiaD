@@ -95,6 +95,11 @@ route.post('/create', (req, res) => {
   }).catch(err => res.status(400).send(err));
 });
 
+/**
+ * Exists nao passa por token 
+ * Recebe um email e verifica na base de dados de o email ja foi cadastrado
+ * Para verificar no aplicativo se a logica de cadstro pode continuar
+ */
 route.get('/exists/:id', (req, res) => {
   const email = req.params.id
   console.log(email);
@@ -228,6 +233,11 @@ route.post('/auth', (req, res) => {
   }).catch(err => res.status(400).send({ error: 'Input malformated' }));
 });
 
+/**
+ * Follow recebe um UserId de quem esta seguindo e um FollowId de quem ira seguir
+ * Verifica na base de dados de o userId existe no bando
+ * Se existir o campo de following recebe o novo FollowId de quem ira seguir
+ */
 route.post('/follow', (req, res) => {
   const { userId, followUserId } = req.body;
 
@@ -250,6 +260,12 @@ route.post('/follow', (req, res) => {
 
 })
 
+/**
+ * Unfollow recebe um UserId de quem está deixando de seguir e um unfollowId de pessoa que sera deixada de seguir
+ * Verifica na base de o UserId esta cadastrado
+ * Se estiver é filtrado o campo de following do usuario
+ * É preenchido um payload com o restante dos follows do usuario e entao atualzado o modelo do usuário
+ */
 route.post('/unfollow', (req, res) => {
   const { userId, unfollowUserId } = req.body;
 
@@ -257,8 +273,6 @@ route.post('/unfollow', (req, res) => {
 
   User.findById({ _id: userId }).then(user => {
     if (!user) return res.status(400).send({ error: 'User not found' });
-
-    console.log(user.following.length);
 
     if (user.following.length) {
       const following = user.following;
