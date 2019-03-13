@@ -178,6 +178,34 @@ route.patch('/comment', (req, res) => {
 });
 
 
+route.patch('/editComment', (req, res) => {
+  const { postId, commentId, content } = req.body;
+
+  Post.findById({ _id: postId }).then(post => {
+    if (!post) return res.status(400).send({ error: 'Post not found' });
+
+    let indexOfComment;
+    let payload = post.comments;
+
+    post.comments.forEach((comment, index) => {
+      comment._id.toString() == commentId ? indexOfComment = index : null;
+    });
+
+    payload[indexOfComment].content = content
+
+    post.update({ comments: payload }, (err) => {
+      if (err) return res.status(500).send({ error: 'Error on updating post, try again' });
+
+      res.send();
+    })
+
+  }).catch(err => {
+    console.log(err);
+    res.status(400).send({ error: 'Request malformated' });
+  })
+
+
+});
 /**
  * Apenas lista o posts para debug
  */
@@ -239,13 +267,13 @@ route.delete('/comment', (req, res) => {
     if (!post) return res.status(400).send({ error: 'Post not found' });
 
     let payload = [];
-    post.comments.map(comment => { if (comment._id != commentId) payload.push(comment); });
+
+    payload = post.comments.filter(comment => comment._id.toString() != commentId);
 
     post.update({ comments: payload }, (err) => {
       if (err) return res.status(500).send({ error: 'Error on comments update, try again' });
       res.send()
     });
-
   }).catch(err => res.status(400).send({ error: 'Id malformated' }));
 });
 
