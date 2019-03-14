@@ -163,21 +163,35 @@ route.delete('/push', (req, res) => {
  */
 route.patch('/comment', (req, res) => {
   const { assignedTo, postId, content } = req.body;
+
   if (!assignedTo && !postId && !content) return res.status(400).send({ error: 'Query malformated' });
 
   Post.findById({ _id: postId }).then(post => {
+
     const comment = { assignedTo, content };
-    const comments = [...post.comments, comment];
+    const comments = [comment, ...post.comments];
 
     post.update({ comments }, (err) => {
       if (err) return res.status(500).send({ error: 'Error on comment update, try again' });
-      res.send({ message: 'Update successfully' });
+
+      Post.findById({ _id: post._id })
+        .populate({ path: 'comments.assignedTo', select: 'photo name' })
+        .then(post => {
+          res.send(post.comments[0]);
+        });
     });
 
   }).catch(err => res.status(400).send({ error: 'Post not found' }));
 });
 
-
+/**
+ * EditComment rece um POST_ID && COMMENT_ID && CONTENT
+ * Busca no banco se aquele post existe, se nao é é rejeitada a requisicao
+ * É descoberto o index do comentario naquele post
+ * Um payload com uma do post recebe a aoteração no index do comentario com o novo conteudo
+ * O campo de comentarios do post é substituido pelo payload alterado
+ * 
+ */
 route.patch('/editComment', (req, res) => {
   const { postId, commentId, content } = req.body;
 
