@@ -67,12 +67,13 @@ route.get('/list', (req, res) => {
   });
 });
 
-route.get('/profile', (req, res) => {
-  const { userId } = req.body;
-
-  User.findById({ _id: userId }).populate('posts').then(user => {
+route.get('/profile/:id', (req, res) => {
+  const { id } = req.params;
+  User.findById({ _id: id }).populate('posts').then(user => {
     if (!user) return res.status(400).send({ error: 'User not found' });
     res.send(user);
+  }).catch(err => {
+    res.status(400).send({ error: 'Request malformated' });
   });
 });
 //------------------------------------------------------------------------------------//
