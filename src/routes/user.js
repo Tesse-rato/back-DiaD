@@ -67,6 +67,14 @@ route.get('/list', (req, res) => {
   });
 });
 
+route.get('/profile', (req, res) => {
+  const { userId } = req.body;
+
+  User.findById({ _id: userId }).populate('posts').then(user => {
+    if (!user) return res.status(400).send({ error: 'User not found' });
+    res.send(user);
+  });
+});
 //------------------------------------------------------------------------------------//
 /**
  * Create User primeiro confirma os campos preenchidos
