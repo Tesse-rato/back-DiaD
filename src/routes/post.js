@@ -139,7 +139,7 @@ route.delete('/push', (req, res) => {
 
     let payload = post;
 
-    payload.pushes.times--;
+    payload.pushes.times > 0 ? payload.pushes.times-- : null;
 
     payload.pushes.users = payload.pushes.users.filter(user => user.toString() != assignedTo);
 

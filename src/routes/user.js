@@ -69,12 +69,21 @@ route.get('/list', (req, res) => {
 
 route.get('/profile/:id', (req, res) => {
   const { id } = req.params;
-  User.findById({ _id: id }).populate('posts').then(user => {
-    if (!user) return res.status(400).send({ error: 'User not found' });
-    res.send(user);
-  }).catch(err => {
-    res.status(400).send({ error: 'Request malformated' });
-  });
+  User.findById({ _id: id })
+    .populate({
+      path: 'posts',
+      populate: {
+        path: 'assignedTo', select: 'name photo.thumbnail',
+      },
+      populate: { path: 'comments.assignedTo', select: 'name photo.thumbnail' }
+    })
+    .then(user => {
+
+      if (!user) return res.status(400).send({ error: 'User not found' });
+      res.send(user);
+    }).catch(err => {
+      res.status(400).send({ error: 'Request malformated' });
+    });
 });
 //------------------------------------------------------------------------------------//
 /**
