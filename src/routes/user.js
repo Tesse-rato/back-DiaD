@@ -282,6 +282,9 @@ route.post('/follow', (req, res) => {
   User.findById({ _id: userId }).then(user => {
     if (!user) return res.status(400).send({ error: 'User not found' });
 
+    const alreadyFollow = user.following.find(id => id.toString() == followUserId);
+    if (alreadyFollow) return res.status(400).send({ error: 'Already following' });
+
     const following = user.following;
     following.push(followUserId);
 
