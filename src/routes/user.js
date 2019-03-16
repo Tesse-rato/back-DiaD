@@ -72,10 +72,7 @@ route.get('/profile/:id', (req, res) => {
   User.findById({ _id: id })
     .populate({
       path: 'posts',
-      populate: {
-        path: 'assignedTo', select: 'name photo.thumbnail',
-      },
-      populate: { path: 'comments.assignedTo', select: 'name photo.thumbnail' }
+      populate: { path: 'assignedTo comments.assignedTo', select: 'name photo.thumbnail' },
     })
     .then(user => {
 
