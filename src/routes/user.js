@@ -125,6 +125,20 @@ route.get('/exists/:id', (req, res) => {
 
   }).catch(err => res.status(400).send({ error: 'Email malformated' }));
 });
+
+route.get('/nicknameExists/:nickname', (req, res) => {
+  const nickname = req.params.nickname;
+
+  User.find({ 'name.nickname': nickname }).then(user => {
+
+    if (user.length) return res.status(400).send({ error: 'Nickname already used' });
+
+    res.send();
+
+  }).catch(err => {
+    res.status(400).send({ error: 'Request malformated' });
+  });
+});
 //------------------------------------------------------------------------------------//
 /**
  * Pofile photo recebe um multiparti-form, no middleware é buscado o USER_ID
@@ -194,14 +208,10 @@ route.put('/edit', (req, res) => {
 
   if (!userId || !email || !first || !last || !nickname || !password || !socialMedia) return res.status(400).send({ error: 'Input malformated' });
 
-
-  User.findOne({ email })
+  User.findOne({ _id: userId })
     .select('+password')
     .then((user) => {
       if (!user) return res.status(400).send({ error: 'User not found' });
-
-      console.log(user);
-      console.log('USUARIO ENCONTRADO');
 
       if (user.name.nickname != nickname) {
         User.find({ 'name.nickname': nickname }).then(userToVerifyNickname => {
