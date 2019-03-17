@@ -69,7 +69,7 @@ route.get('/list', (req, res) => {
 
 route.get('/profile/:id', (req, res) => {
   const { id } = req.params;
-  User.findById({ _id: id })
+  User.findById({ _id: id }).select('+socialMedia')
     .populate({
       path: 'posts',
       populate: { path: 'assignedTo comments.assignedTo', select: 'name photo.thumbnail' },
@@ -184,27 +184,72 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
  */
 route.put('/edit', (req, res) => {
   const {
-    userId,
     bio,
     email,
+    userId,
+    password,
+    socialMedia,
     name: { first, last, nickname },
   } = req.body;
 
-  if (!userId || !email || !first || !last || !nickname) return res.status(400).send({ error: 'Input malformated' });
+  if (!userId || !email || !first || !last || !nickname || !password || !socialMedia) return res.status(400).send({ error: 'Input malformated' });
 
-  User.findById({ _id: userId }).then(user => {
-    if (!user) return res.status(400).send({ error: 'User not found' });
 
-    user.update({
-      bio,
-      email,
-      name: { first, last, nickname }
-    }, (err) => {
-      if (err) return res.status(500).send({ error: 'Error um updating user' });
-      return res.send();
+  User.findOne({ email })
+    .select('+password')
+    .then((user) => {
+      if (!user) return res.status(400).send({ error: 'User not found' });
+
+      console.log(user);
+      console.log('USUARIO ENCONTRADO');
+
+      if (user.name.nickname != nickname) {
+        User.find({ 'name.nickname': nickname }).then(userToVerifyNickname => {
+          if (userToVerifyNickname.length) return res.status(400).send({ error: 'Nickname already exists' });
+
+          user.bio = bio;
+          user.name.first = first;
+          user.name.last = last;
+          user.name.nickname = nickname;
+          user.email = email;
+          user.password = password;
+          user.socialMedia = socialMedia;
+
+          user.save((err) => {
+            if (err) return res.status(500).send({ error: 'Error um updating user' });
+
+            return res.send();
+          });
+
+        }).catch(err => {
+          console.log(err);
+        });
+      }
+      else {
+
+        console.log('nickname nao sao diferentes');
+
+        user.bio = bio;
+        user.name.first = first;
+        user.name.last = last;
+        user.name.nickname = nickname;
+        user.email = email;
+        user.password = password;
+        user.socialMedia = socialMedia;
+
+        user.save((err) => {
+          if (err) return res.status(500).send({ error: 'Error um updating user' });
+
+          return res.send();
+        });
+
+      }
+
+
+    }).catch(err => {
+      console.log(err);
+      res.status(400).send({ error: 'Upload malformated' })
     });
-
-  }).catch(err => res.status(400).send({ error: 'Upload malformated' }));
 });
 
 //------------------------------------------------------------------------------------//

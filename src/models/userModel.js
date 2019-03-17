@@ -51,6 +51,13 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  socialMedia: {
+    facebook: String,
+    linkedin: String,
+    whatsapp: String,
+    youtube: String,
+    tumblr: String,
+  },
   bio: String,
   city: String,
 })
