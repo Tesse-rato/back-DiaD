@@ -11,6 +11,7 @@ const Post = require('../models/postModel');
 const env = require('../environment/index');
 const sendMail = require('../mail');
 const uploadMiddleware = require('../upload');
+const codeOfConfirm = require('../mail/confirm');
 
 //------------------------------------------------------------------------------------//
 /**
@@ -82,6 +83,27 @@ route.get('/profile/:id', (req, res) => {
       res.status(400).send({ error: 'Request malformated' });
     });
 });
+
+route.post('/confirm/send', (req, res) => {
+  const { email } = req.body;
+
+  codeOfConfirm.generateCode(email).then(form => {
+    res.send(form);
+  }).catch(err => {
+    res.status(500)
+  });
+
+});
+route.post('/confirm/compare', (req, res) => {
+  const { code } = req.body;
+
+  codeOfConfirm.compareCode(code).then(response => {
+    res.send();
+  }).catch(err => {
+    res.status(400).send({ error: err });
+  })
+});
+
 //------------------------------------------------------------------------------------//
 /**
  * Create User primeiro confirma os campos preenchidos
