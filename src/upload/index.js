@@ -27,8 +27,8 @@ const multerOptions = {
     },
     filename: (req, file, cb) => {
       const hash = crypto.randomBytes(8).toString('hex');
-      const fileName = file.originalname;
-      cb(null, `original-${hash}-${fileName}`);
+      const ext = file.originalname.split('.');
+      cb(null, `original-${hash}.${ext[1]}`);
     }
   }),
   errorHandling: true,

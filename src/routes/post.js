@@ -55,7 +55,7 @@ route.patch('/postPhoto/:id', upload, (req, res) => {
   const { destination, filename } = req.file;
   const pathOriginal = `${destination}/${filename}`;
   const partsFileName = filename.split('-');
-  const newFileName = `optimized-${partsFileName[1]}-${partsFileName[2]}`
+  const newFileName = `optimized-${partsFileName[1]}`
 
   fs.readFile(pathOriginal, (err, buffer) => {
     if (err) return res.status(500).send({ error: 'Error on read file to resize' });

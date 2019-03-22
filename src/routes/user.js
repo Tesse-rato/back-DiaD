@@ -84,6 +84,9 @@ route.get('/profile/:id', (req, res) => {
     });
 });
 
+/**
+ * Confirm Send gera um hash aleatorio e envia um email pro usuario
+ */
 route.post('/confirm/send', (req, res) => {
   const { email } = req.body;
 
@@ -94,6 +97,10 @@ route.post('/confirm/send', (req, res) => {
   });
 
 });
+/**
+ * Confirm Compare recebe o codigo de confirmacao e compara
+ * Se ele etiver na RAM é aceito se nao é retornado 400
+ */
 route.post('/confirm/compare', (req, res) => {
   const { code } = req.body;
 
@@ -108,6 +115,7 @@ route.post('/confirm/compare', (req, res) => {
 /**
  * Create User primeiro confirma os campos preenchidos
  * Após verifica no banco de dados se aquele email já esta cadastrado
+ * Payload recebe um foto padrao para caso o usuario nao estiver sekecionado uma
  * Se passar pelas confirmação o email com seus dados é inserido no banco de dados
  */
 route.post('/create', (req, res) => {
@@ -116,9 +124,15 @@ route.post('/create', (req, res) => {
       if (user.length) return res.status(400).send({ error: 'User already exists' });
       console.log(user);
 
-      console.log(req.body);
+      const payload = {
+        ...req.body,
+        photo: {
+          thumbnail: `${env.dbStatic}/blank-profile.png`,
+          originalPhoto: `${env.dbStatic}/blank-profile.png`,
+        }
+      };
 
-      User.create(req.body).then((user) => {
+      User.create(payload).then((user) => {
         user.password = undefined;
 
         generateToken({ id: user._id }, (err, token) => {
@@ -128,7 +142,10 @@ route.post('/create', (req, res) => {
         });
 
       }).catch(err => res.status(400).send({ error: 'Nickname already exists' }));
-    }).catch(err => res.status(400).send({ error: 'Input malformated' }));
+    }).catch(err => {
+      console.log(err);
+      res.status(400).send({ error: 'Input malformated' })
+    });
   }).catch(err => res.status(400).send(err));
 });
 
@@ -181,13 +198,13 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
   const { destination, filename } = req.file;
   const pathPhotoOriginal = `${destination}/${filename}`;
   const partsName = filename.split('-');
-  const thumbnailName = `thumbnail-${partsName[1]}-${partsName[2]}`;
+  const thumbnailName = `thumbnail-${partsName[1]}`;
 
-  if (originalPhoto) {
+  if (originalPhoto != `${env.dbStatic}/blank-profile.png`) {
     const partsToOriginalPath = originalPhoto.split('/');
     fs.unlink(`${env.diskStorage}/${partsToOriginalPath[3]}`, (err) => console.log(err));
   }
-  if (thumbnail) {
+  if (thumbnail != `${env.dbStatic}/blank-profile.png`) {
     const partsToThumbnailPath = thumbnail.split('/');
     fs.unlink(`${env.diskStorage}/${partsToThumbnailPath[3]}`, (err) => console.log(err));
   }
@@ -206,7 +223,12 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
           }
         }, (err) => {
           if (err) return res.status(500).send({ error: 'Error on setting profile image' });
-          return res.send();
+          return res.send({
+            photo: {
+              originalPhoto: `${env.dbStatic}/${filename}`,
+              thumbnail: `${env.dbStatic}/${thumbnailName}`
+            }
+          });
         });
       }).catch(err => res.status(400).send({ error: 'Error on load Image' }));
   });
@@ -515,6 +537,15 @@ route.delete('/delete_all', (req, res) => {
   User.deleteMany({}).then(() => {
     res.send({ remove: 'all' });
   });
+});
+
+
+route.post('/debug', (req, res) => {
+
+  console.log(req.body);
+
+  res.send();
+
 });
 
 module.exports = route;
