@@ -37,7 +37,11 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  photo: String
+  photo: {
+    width: String,
+    height: String,
+    content: String,
+  }
 })
 
 module.exports = mongoose.model('Post', postSchema);

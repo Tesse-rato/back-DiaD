@@ -47,8 +47,8 @@ route.patch('/postPhoto/:id', upload, (req, res) => {
 
   const { photo } = req.model;
 
-  if (photo) {
-    const pathToPhoto = photo.split('/');
+  if (photo.content) {
+    const pathToPhoto = photo.content.split('/');
     fs.unlink(`${env.diskStorage}/${pathToPhoto[3]}`, (err) => console.log(err));
   }
 
@@ -63,11 +63,22 @@ route.patch('/postPhoto/:id', upload, (req, res) => {
     sharp(buffer)
       .resize(600)
       .toFile(`${destination}/${newFileName}`)
-      .then(() => {
-        fs.unlink(pathOriginal, () => null);
-        req.model.update({ photo: `${env.dbStatic}/${newFileName}` }, (err) => {
+      .then(info => {
+
+        if (pathOriginal) {
+          fs.unlink(pathOriginal, () => null);
+        }
+
+        req.model.update({
+          photo: {
+            width: info.width,
+            height: info.height,
+            content: `${env.dbStatic}/${newFileName}`,
+          }
+        }, (err) => {
           if (err) return res.status(500).send({ error: 'Error on updating photo path' });
-          res.send()
+
+          res.send({ content: env.dbStatic + '/' + newFileName });
         });
       }).catch(err => res.status(500).send({ error: 'Error on resize image try again' }));
   });
@@ -243,11 +254,12 @@ route.get('/list', (req, res) => {
  * Depois atualiza o usuário com a nova lista de posts sem aquele post
  */
 route.delete('/delete', (req, res) => {
+  console.log(req.body.id)
   Post.findById({ _id: req.body.id }).then(post => {
     if (!post) return res.status(400).send({ error: 'Post not foundeeeee' });
 
-    if (post.photo) {
-      const partsNamePhoto = post.photo.split('/');
+    if (post.photo.content) {
+      const partsNamePhoto = post.photo.content.split('/');
       fs.unlink(`${env.diskStorage}/${partsNamePhoto[3]}`, () => null);
     }
 
@@ -262,7 +274,10 @@ route.delete('/delete', (req, res) => {
       });
 
     }).catch(err => res.status(400).send({ error: 'User assigned to post not found on data base' }));
-  }).catch(err => res.status(400).send({ error: 'Request malformated' }));
+  }).catch(err => {
+    console.log(err);
+    res.status(400).send({ error: 'Request malformated' })
+  });
 });
 
 
