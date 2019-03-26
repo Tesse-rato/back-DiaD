@@ -1,6 +1,7 @@
 const mongoose = require('../database');
 
 const postSchema = new mongoose.Schema({
+  category: String,
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -35,7 +36,6 @@ const postSchema = new mongoose.Schema({
   }],
   content: {
     type: String,
-    required: true,
   },
   photo: {
     width: String,

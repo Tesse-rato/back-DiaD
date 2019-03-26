@@ -14,24 +14,25 @@ const env = require('../environment');
  * Ao sucesso da criação do post o usuario é atualizado com o ID retornado...
  */
 route.post('/create', (req, res) => {
-  const { assignedTo, content } = req.body;
+  const { assignedTo, content, category } = req.body;
   if (!assignedTo) return res.status(400).send({ error: 'No User provided' });
-  if (!content) return res.status(400).send({ error: 'Content is required' });
+  if (!category) return res.status(400).send({ error: 'Category not provided' });
 
   User.findById({ _id: assignedTo }).then(user => {
     if (!user) return res.status(400).send({ error: 'User not found' });
 
-    Post.create({ assignedTo, content }).then(post => {
+    Post.create({ assignedTo, content, category }).then(post => {
       const posts = user.posts;
       posts.push(post._id);
 
       user.update({ posts }, (err) => {
         if (err) return res.status(500).send({ error: 'Error on user update, try again' });
-        return res.send();
+
+        return res.send(post);
       });
 
     }).catch(err => res.status(500).send({ error: 'Error on post create, try again' }));
-  }).catch(err => res.send(400).send({ error: 'Request malformated' }));
+  }).catch(err => res.status(400).send({ error: 'Request malformated' }));
 });
 
 /**
@@ -78,7 +79,7 @@ route.patch('/postPhoto/:id', upload, (req, res) => {
         }, (err) => {
           if (err) return res.status(500).send({ error: 'Error on updating photo path' });
 
-          res.send({ content: env.dbStatic + '/' + newFileName });
+          res.send({ content: env.dbStatic + '/' + newFileName, width: info.width, height: info.height });
         });
       }).catch(err => res.status(500).send({ error: 'Error on resize image try again' }));
   });
@@ -234,8 +235,10 @@ route.patch('/editComment', (req, res) => {
 /**
  * Apenas lista o posts para debug
  */
-route.get('/list', (req, res) => {
-  Post.find()
+route.get('/list/:category', (req, res) => {
+  const category = req.params.category;
+
+  Post.find({ category })
     .populate({ path: 'assignedTo', select: 'photo name' })
     .populate({ path: 'comments.assignedTo', select: 'photo name' })
 
@@ -254,7 +257,6 @@ route.get('/list', (req, res) => {
  * Depois atualiza o usuário com a nova lista de posts sem aquele post
  */
 route.delete('/delete', (req, res) => {
-  console.log(req.body.id)
   Post.findById({ _id: req.body.id }).then(post => {
     if (!post) return res.status(400).send({ error: 'Post not foundeeeee' });
 
