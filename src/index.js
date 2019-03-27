@@ -9,6 +9,7 @@ const userRoutes = require('./routes/user');
 const postRoutes = require('./routes/post');
 
 express.use(cors());
+express.use(bodyParser({ limit: '12MB' }));
 express.use(bodyParser.json());
 express.use(middlewareAuth);
 

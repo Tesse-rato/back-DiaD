@@ -191,7 +191,7 @@ route.get('/nicknameExists/:nickname', (req, res) => {
  */
 route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
   if (req.uploadError) return res.status(400).send({ error: 'User not found' });
-
+  console.log('AQUI NA ROTA');
   const user = req.model;
   const { photo: { thumbnail, originalPhoto } } = user;
 
@@ -230,7 +230,10 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
             }
           });
         });
-      }).catch(err => res.status(400).send({ error: 'Error on load Image' }));
+      }).catch(err => {
+        console.log(err);
+        res.status(400).send({ error: 'Error on load Image' })
+      });
   });
 });
 
