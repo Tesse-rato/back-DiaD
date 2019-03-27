@@ -248,6 +248,36 @@ route.get('/list/:category', (req, res) => {
     });
 });
 
+route.get('/list/favorites/:id', (req, res) => {
+  const _id = req.params.id;
+
+  User.findOne({ _id }).then(user => {
+    if (!user) return res.status(400).send({ error: 'User not found' });
+
+    User.find({ _id: user.following }).then(users => {
+
+      let usersPostStack = [];
+      let postStack = [];
+
+      users.map(user => {
+        usersPostStack.push(user.posts);
+      })
+
+      usersPostStack.map(uniqueArrayPost => {
+        uniqueArrayPost.map(_id => {
+          postStack.push(_id);
+        });
+      });
+
+      Post.find({ _id: postStack }).populate({ path: 'assignedTo comments.assignedTo', select: 'name photo' })
+        .then(posts => {
+          res.send(posts);
+        });
+    });
+
+
+  }).catch(err => res.status(400).send({ error: 'Request malformated' }));
+});
 /**
  * Delete um post por ID recebe o POST_ID
  * Busca na base pelo post referente ao id
