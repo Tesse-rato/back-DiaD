@@ -81,12 +81,14 @@ route.get('/search/:content', (req, res) => {
       { 'name.last': { $regex: new RegExp(content, 'i') } },
       { 'name.nickname': { $regex: new RegExp(content, 'i') } }
     ]
-  }).then(users => {
-    res.send(users);
+  })
+    .select('-posts -createdAt -socialMedia -following -bio -email -photo.originalPhoto')
+    .then(users => {
+      res.send(users);
 
-  }).catch(err => {
-    res.status(400).send({ error: 'users not found' });
-  });
+    }).catch(err => {
+      res.status(400).send({ error: 'users not found' });
+    });
 });
 
 /**
@@ -97,7 +99,7 @@ route.get('/search/:content', (req, res) => {
  */
 route.get('/profile/:id', (req, res) => {
   const { id } = req.params;
-  User.findById({ _id: id }).select('+socialMedia')
+  User.findById({ _id: id })
     .populate({
       path: 'posts',
       populate: { path: 'assignedTo comments.assignedTo', select: 'name photo.thumbnail' },
