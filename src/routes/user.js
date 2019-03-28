@@ -68,6 +68,33 @@ route.get('/list', (req, res) => {
   });
 });
 
+/**
+ * Search faz uma busca no banco utilizando uma regex
+ * Qualquer string com semelhanca é retornado do banco
+ */
+route.get('/search/:content', (req, res) => {
+  const content = req.params.content;
+
+  User.find({
+    $or: [
+      { 'name.first': { $regex: new RegExp(content, 'i') } },
+      { 'name.last': { $regex: new RegExp(content, 'i') } },
+      { 'name.nickname': { $regex: new RegExp(content, 'i') } }
+    ]
+  }).then(users => {
+    res.send(users);
+
+  }).catch(err => {
+    res.status(400).send({ error: 'users not found' });
+  });
+});
+
+/**
+ * ProfileID recebe um ID de usuario no parametro
+ * Busca no banco por esse ID
+ * Se existir usuario cadastrado com aquele ID é retornado
+ * Se nao retorna status 400
+ */
 route.get('/profile/:id', (req, res) => {
   const { id } = req.params;
   User.findById({ _id: id }).select('+socialMedia')
@@ -191,7 +218,7 @@ route.get('/nicknameExists/:nickname', (req, res) => {
  */
 route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
   if (req.uploadError) return res.status(400).send({ error: 'User not found' });
-  console.log('AQUI NA ROTA');
+
   const user = req.model;
   const { photo: { thumbnail, originalPhoto } } = user;
 
@@ -213,7 +240,7 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
     if (err) return res.status(500).send({ error: 'Error on read file to resize' });
 
     sharp(buffer)
-      .resize(120)
+      .resize(240)
       .toFile(`${destination}/${thumbnailName}`)
       .then(() => {
         user.update({
@@ -231,7 +258,7 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
           });
         });
       }).catch(err => {
-        console.log(err);
+        console.log({ err });
         res.status(400).send({ error: 'Error on load Image' })
       });
   });

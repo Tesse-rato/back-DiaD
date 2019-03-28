@@ -91,13 +91,13 @@ route.patch('/postPhoto/:id', upload, (req, res) => {
  * Se encontrado e aplicado o novo conteúdo no post sem alterar o restante dos campos
  */
 route.put('/edit', (req, res) => {
-  const { postId, content, userId } = req.body;
+  const { postId, content, userId, category } = req.body;
 
   Post.findById({ _id: postId }).then(post => {
     if (!post) return res.status(400).send({ error: 'Post not found' });
     if (userId != post.assignedTo) return res.status(400).send({ error: 'User and assigendPost not match' });
 
-    post.update({ content }, err => {
+    post.update({ content, category }, err => {
       if (err) return res.status(500).send({ error: 'Error on updating post, try again' });
       res.send();
     })
