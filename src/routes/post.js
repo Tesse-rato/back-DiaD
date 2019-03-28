@@ -7,13 +7,13 @@ const User = require('../models/userModel');
 const upload = require('../upload');
 const env = require('../environment');
 
-/**
- * Criando um post recebe um USER_ID para assinar ao post
- * Primeiro valida se todas entradas foram recebidas antes de levar ao banco
- * Busca no banco pelo ID fornecido, se existir ele tenta criar um novo Post
- * Ao sucesso da criação do post o usuario é atualizado com o ID retornado...
- */
 route.post('/create', (req, res) => {
+  /**
+   * Criando um post recebe um USER_ID para assinar ao post
+   * Primeiro valida se todas entradas foram recebidas antes de levar ao banco
+   * Busca no banco pelo ID fornecido, se existir ele tenta criar um novo Post
+   * Ao sucesso da criação do post o usuario é atualizado com o ID retornado...
+   */
   const { assignedTo, content, category } = req.body;
   if (!assignedTo) return res.status(400).send({ error: 'No User provided' });
   if (!category) return res.status(400).send({ error: 'Category not provided' });
@@ -34,16 +34,15 @@ route.post('/create', (req, res) => {
     }).catch(err => res.status(500).send({ error: 'Error on post create, try again' }));
   }).catch(err => res.status(400).send({ error: 'Request malformated' }));
 });
-
-/**
- * Upload de photo recebe no body multi-parti-form a imagem
- * Na rota recebe o POST_ID do post que vai ser atualizado
- * A imagem passa pelo middleware para ser salvo no disco
- * Apos isso vem pro controler pra ser redimencionada 
- * Apos redensionar e dar um novo nome para imagem...
- * é atualizado o campo de photo do POST
- */
 route.patch('/postPhoto/:id', upload, (req, res) => {
+  /**
+   * Upload de photo recebe no body multi-parti-form a imagem
+   * Na rota recebe o POST_ID do post que vai ser atualizado
+   * A imagem passa pelo middleware para ser salvo no disco
+   * Apos isso vem pro controler pra ser redimencionada 
+   * Apos redensionar e dar um novo nome para imagem...
+   * é atualizado o campo de photo do POST
+   */
   if (req.uploadError) return res.status(400).send({ error: 'Post not found' });
 
   const { photo } = req.model;
@@ -56,7 +55,7 @@ route.patch('/postPhoto/:id', upload, (req, res) => {
   const { destination, filename } = req.file;
   const pathOriginal = `${destination}/${filename}`;
   const partsFileName = filename.split('-');
-  const newFileName = `optimized-${partsFileName[1]}`
+  const newFileName = `optimized-${partsFileName[1]}`;
 
   fs.readFile(pathOriginal, (err, buffer) => {
     if (err) return res.status(500).send({ error: 'Error on read file to resize' });
@@ -84,13 +83,12 @@ route.patch('/postPhoto/:id', upload, (req, res) => {
       }).catch(err => res.status(500).send({ error: 'Error on resize image try again' }));
   });
 });
-
-/**
- * Atualizar um post apenas recebe o POST_ID && CONTENT && USER_ID novo pra ser atualizado
- * Busca na base de dados o post em si
- * Se encontrado e aplicado o novo conteúdo no post sem alterar o restante dos campos
- */
 route.put('/edit', (req, res) => {
+  /**
+   * Atualizar um post apenas recebe o POST_ID && CONTENT && USER_ID novo pra ser atualizado
+   * Busca na base de dados o post em si
+   * Se encontrado e aplicado o novo conteúdo no post sem alterar o restante dos campos
+   */
   const { postId, content, userId, category } = req.body;
 
   Post.findById({ _id: postId }).then(post => {
@@ -100,19 +98,18 @@ route.put('/edit', (req, res) => {
     post.update({ content, category }, err => {
       if (err) return res.status(500).send({ error: 'Error on updating post, try again' });
       res.send();
-    })
+    });
 
   }).catch(err => res.status(400).send({ error: 'POST_ID malformated' }));
 });
-
-/**
- * Post Push recebe um USER_ID && POST_ID
- * Primeiro ele verifica as entradas. Entao ele busca no banco pelo id do post 
- * Para entao atualizar o campo PUSHES. Antes ele itera pelo array de usuários
- * Se encontrar o mesmo id no banco é descartada a query
- * PUSHES.USERS + USER_ID fornecido, TIMES + 1
- */
 route.patch('/push', (req, res) => {
+  /**
+   * Post Push recebe um USER_ID && POST_ID
+   * Primeiro ele verifica as entradas. Entao ele busca no banco pelo id do post 
+   * Para entao atualizar o campo PUSHES. Antes ele itera pelo array de usuários
+   * Se encontrar o mesmo id no banco é descartada a query
+   * PUSHES.USERS + USER_ID fornecido, TIMES + 1
+   */
   const { assignedTo, postId } = req.body;
   if (!assignedTo && !postId) return res.status(400).send({ error: 'Request malformated' });
 
@@ -134,16 +131,14 @@ route.patch('/push', (req, res) => {
 
   }).catch(err => res.status(400).send({ error: 'Post not found' }));
 });
-
-
-/**
- * Delete push recebe o POST_ID && USER_ID
- * Encontrando o post na base de dados
- * É iterado pelos PUSHES para encontrar o usuario que empurrou o post
- * Se o id for diferente do usuario que ta removendo seu push
- * É colocado num payload para atualizar o campo de pushes do post
- */
 route.delete('/push', (req, res) => {
+  /**
+   * Delete push recebe o POST_ID && USER_ID
+   * Encontrando o post na base de dados
+   * É iterado pelos PUSHES para encontrar o usuario que empurrou o post
+   * Se o id for diferente do usuario que ta removendo seu push
+   * É colocado num payload para atualizar o campo de pushes do post
+   */
   const { postId, assignedTo } = req.body;
 
   Post.findById({ _id: postId }).then(post => {
@@ -160,20 +155,16 @@ route.delete('/push', (req, res) => {
       res.send();
     });
 
-  }).catch(err => {
-    console.log(err);
-    return res.status(400).send({ error: 'Push_id malformated' })
-  });
+  }).catch(err => res.status(400).send({ error: 'Push_id malformated' }));
 });
-
-/**
- * Post Comment Recebe um USER_ID && POST_ID && CONTENT
- * Verifica se todos campos foram fornecidos caso nao, descarta a query
- * Entao busca pelo POST_ID no banco
- * É atualizado o campo COMMENTS com os antigos comentarios
- * E adicionado um novo objeto com conteudo e USER_ID de quem o fez
- */
 route.patch('/comment', (req, res) => {
+  /**
+   * Post Comment Recebe um USER_ID && POST_ID && CONTENT
+   * Verifica se todos campos foram fornecidos caso nao, descarta a query
+   * Entao busca pelo POST_ID no banco
+   * É atualizado o campo COMMENTS com os antigos comentarios
+   * E adicionado um novo objeto com conteudo e USER_ID de quem o fez
+   */
   const { assignedTo, postId, content } = req.body;
 
   if (!assignedTo && !postId && !content) return res.status(400).send({ error: 'Query malformated' });
@@ -195,16 +186,14 @@ route.patch('/comment', (req, res) => {
 
   }).catch(err => res.status(400).send({ error: 'Post not found' }));
 });
-
-/**
- * EditComment rece um POST_ID && COMMENT_ID && CONTENT
- * Busca no banco se aquele post existe, se nao é é rejeitada a requisicao
- * É descoberto o index do comentario naquele post
- * Um payload com uma do post recebe a aoteração no index do comentario com o novo conteudo
- * O campo de comentarios do post é substituido pelo payload alterado
- * 
- */
 route.patch('/editComment', (req, res) => {
+  /**
+   * EditComment rece um POST_ID && COMMENT_ID && CONTENT
+   * Busca no banco se aquele post existe, se nao é é rejeitada a requisicao
+   * É descoberto o index do comentario naquele post
+   * Um payload com uma do post recebe a aoteração no index do comentario com o novo conteudo
+   * O campo de comentarios do post é substituido pelo payload alterado
+   */
   const { postId, commentId, content } = req.body;
 
   Post.findById({ _id: postId }).then(post => {
@@ -217,25 +206,20 @@ route.patch('/editComment', (req, res) => {
       comment._id.toString() == commentId ? indexOfComment = index : null;
     });
 
-    payload[indexOfComment].content = content
+    payload[indexOfComment].content = content;
 
     post.update({ comments: payload }, (err) => {
       if (err) return res.status(500).send({ error: 'Error on updating post, try again' });
 
       res.send();
-    })
+    });
 
-  }).catch(err => {
-    console.log(err);
-    res.status(400).send({ error: 'Request malformated' });
-  })
-
-
+  }).catch(err => res.status(400).send({ error: 'Request malformated' }));
 });
-/**
- * Apenas lista o posts para debug
- */
 route.get('/list/:category', (req, res) => {
+  /**
+   * Apenas lista o posts para debug
+   */
   const category = req.params.category;
 
   Post.find({ category })
@@ -247,8 +231,15 @@ route.get('/list/:category', (req, res) => {
       res.send(posts);
     });
 });
-
 route.get('/list/favorites/:id', (req, res) => {
+  /**
+   * List Favorites recebe o ID do Usuario
+   * Busca no banco por um usuario com aquele ID
+   * Se existir é iterado pelo seu campo Followers
+   * Requisitando no banco cada ID que que o usuario obtenha no campo followers
+   * É reunido todas os posts de todos usuarios contidos no campo followers
+   * É agrupado em um unico array de documento e retornado na resposta
+   */
   const _id = req.params.id;
 
   User.findOne({ _id }).then(user => {
@@ -278,15 +269,15 @@ route.get('/list/favorites/:id', (req, res) => {
 
   }).catch(err => res.status(400).send({ error: 'Request malformated' }));
 });
-/**
- * Delete um post por ID recebe o POST_ID
- * Busca na base pelo post referente ao id
- * Se encontra ele busca o usuario assinado ao post
- * Itera pelos posts do usuario
- * Referencia uma variavel apenas com os posts diferente do POST_ID
- * Depois atualiza o usuário com a nova lista de posts sem aquele post
- */
 route.delete('/delete', (req, res) => {
+  /**
+   * Delete um post por ID recebe o POST_ID
+   * Busca na base pelo post referente ao id
+   * Se encontra ele busca o usuario assinado ao post
+   * Itera pelos posts do usuario
+   * Referencia uma variavel apenas com os posts diferente do POST_ID
+   * Depois atualiza o usuário com a nova lista de posts sem aquele post
+   */
   Post.findById({ _id: req.body.id }).then(post => {
     if (!post) return res.status(400).send({ error: 'Post not foundeeeee' });
 
@@ -311,17 +302,15 @@ route.delete('/delete', (req, res) => {
     res.status(400).send({ error: 'Request malformated' })
   });
 });
-
-
-/**
- * Delete comment Recebe um POST_ID no parametro da rota
- * No body da requisição ele recebe o COMMENT_ID que sera removido
- * É buscado no banco de dados o post que contem o comentario a ser removido
- * Se encontrado o campo de comments do post é iterado
- * Um payload recebe todos comentarios que forem diferente do COMMENT_ID a ser removido
- * No final o post é atualizado com o novo payload
- */
 route.delete('/comment', (req, res) => {
+  /**
+   * Delete comment Recebe um POST_ID no parametro da rota
+   * No body da requisição ele recebe o COMMENT_ID que sera removido
+   * É buscado no banco de dados o post que contem o comentario a ser removido
+   * Se encontrado o campo de comments do post é iterado
+   * Um payload recebe todos comentarios que forem diferente do COMMENT_ID a ser removido
+   * No final o post é atualizado com o novo payload
+   */
   const { commentId, postId } = req.body;
 
   Post.findOne({ _id: postId }).then(post => {
@@ -337,11 +326,10 @@ route.delete('/comment', (req, res) => {
     });
   }).catch(err => res.status(400).send({ error: 'Id malformated' }));
 });
-
-/**
- * Apenas deleta todos POSTS para debug
- */
 route.delete('/delete_all', (req, res) => {
+  /**
+   * Apenas deleta todos POSTS para debug
+   */
   Post.deleteMany().then(() => {
     res.send({ message: 'Success' });
   });

@@ -13,24 +13,23 @@ const sendMail = require('../mail');
 const uploadMiddleware = require('../upload');
 const codeOfConfirm = require('../mail/confirm');
 
-//------------------------------------------------------------------------------------//
-/**
- * Generate token recebe o id do usúario como identificações futuruas ao token
- * recebe uma callback quando o token esta pronto
- */
+
 const generateToken = (params = {}, cb) => {
+  /**
+   * Generate token recebe o id do usúario como identificações futuruas ao token
+   * recebe uma callback quando o token esta pronto
+   */
   jwt.sign(params, env.secretKey, {
     expiresIn: '1d' /*86400*/
   }, cb);
 };
-
-/**
- * validdadeUser retorna uma promise
- * validadeUser desestrura o form enviado pelo front
- * caso a entrada do usuário estiver faltando algum item obrigatório
- * reject é invocado e a é retornado um erro por usuário
- */
 const validateUser = (form = {}) => {
+  /**
+   * validdadeUser retorna uma promise
+   * validadeUser desestrura o form enviado pelo front
+   * caso a entrada do usuário estiver faltando algum item obrigatório
+   * reject é invocado e a é retornado um erro por usuário
+   */
   return new Promise((resolve, reject) => {
     const {
       name: { first, last, nickname },
@@ -58,21 +57,19 @@ const validateUser = (form = {}) => {
   });
 };
 
-//------------------------------------------------------------------------------------//
-/**
- * Apenas lista usuarios para testes na api
- */
 route.get('/list', (req, res) => {
+  /**
+   * Apenas lista usuarios para testes na api
+   */
   User.find()/*.populate('posts')*/.select('+posts +password +tokenForgotPassword +tokenForgotExpires').then((users) => {
     res.send({ users });
   });
 });
-
-/**
- * Search faz uma busca no banco utilizando uma regex
- * Qualquer string com semelhanca é retornado do banco
- */
 route.get('/search/:content', (req, res) => {
+  /**
+   * Search faz uma busca no banco utilizando uma regex
+   * Qualquer string com semelhanca é retornado do banco
+   */
   const content = req.params.content;
 
   User.find({
@@ -90,14 +87,13 @@ route.get('/search/:content', (req, res) => {
       res.status(400).send({ error: 'users not found' });
     });
 });
-
-/**
- * ProfileID recebe um ID de usuario no parametro
- * Busca no banco por esse ID
- * Se existir usuario cadastrado com aquele ID é retornado
- * Se nao retorna status 400
- */
 route.get('/profile/:id', (req, res) => {
+  /**
+   * ProfileID recebe um ID de usuario no parametro
+   * Busca no banco por esse ID
+   * Se existir usuario cadastrado com aquele ID é retornado
+   * Se nao retorna status 400
+   */
   const { id } = req.params;
   User.findById({ _id: id })
     .populate({
@@ -112,11 +108,10 @@ route.get('/profile/:id', (req, res) => {
       res.status(400).send({ error: 'Request malformated' });
     });
 });
-
-/**
- * Confirm Send gera um hash aleatorio e envia um email pro usuario
- */
 route.post('/confirm/send', (req, res) => {
+  /**
+   * Confirm Send gera um hash aleatorio e envia um email pro usuario
+   */
   const { email } = req.body;
 
   codeOfConfirm.generateCode(email).then(form => {
@@ -126,11 +121,11 @@ route.post('/confirm/send', (req, res) => {
   });
 
 });
-/**
- * Confirm Compare recebe o codigo de confirmacao e compara
- * Se ele etiver na RAM é aceito se nao é retornado 400
- */
 route.post('/confirm/compare', (req, res) => {
+  /**
+   * Confirm Compare recebe o codigo de confirmacao e compara
+   * Se ele etiver na RAM é aceito se nao é retornado 400
+   */
   const { code } = req.body;
 
   codeOfConfirm.compareCode(code).then(response => {
@@ -139,15 +134,13 @@ route.post('/confirm/compare', (req, res) => {
     res.status(400).send({ error: err });
   })
 });
-
-//------------------------------------------------------------------------------------//
-/**
- * Create User primeiro confirma os campos preenchidos
- * Após verifica no banco de dados se aquele email já esta cadastrado
- * Payload recebe um foto padrao para caso o usuario nao estiver sekecionado uma
- * Se passar pelas confirmação o email com seus dados é inserido no banco de dados
- */
 route.post('/create', (req, res) => {
+  /**
+   * Create User primeiro confirma os campos preenchidos
+   * Após verifica no banco de dados se aquele email já esta cadastrado
+   * Payload recebe um foto padrao para caso o usuario nao estiver sekecionado uma
+   * Se passar pelas confirmação o email com seus dados é inserido no banco de dados
+   */
   validateUser(req.body).then((email) => {
     User.find({ email }).then((user) => {
       if (user.length) return res.status(400).send({ error: 'User already exists' });
@@ -177,13 +170,12 @@ route.post('/create', (req, res) => {
     });
   }).catch(err => res.status(400).send(err));
 });
-
-/**
- * Exists nao passa por token 
- * Recebe um email e verifica na base de dados de o email ja foi cadastrado
- * Para verificar no aplicativo se a logica de cadstro pode continuar
- */
 route.get('/exists/:id', (req, res) => {
+  /**
+   * Exists nao passa por token 
+   * Recebe um email e verifica na base de dados de o email ja foi cadastrado
+   * Para verificar no aplicativo se a logica de cadstro pode continuar
+   */
   const email = req.params.id
   console.log(email);
   User.find({ email }).then(user => {
@@ -193,8 +185,12 @@ route.get('/exists/:id', (req, res) => {
 
   }).catch(err => res.status(400).send({ error: 'Email malformated' }));
 });
-
 route.get('/nicknameExists/:nickname', (req, res) => {
+  /**
+   * Nickname Exists recebe um nickname no parametro e verifica se o nickname ja esta cadastrado
+   * Pra caso sim a aplicaco mobile nao aceitar aquele nickname
+   * Entao nao seguira o fluxo de cadstro até a resposta da api ser Ok
+   */
   const nickname = req.params.nickname;
 
   User.find({ 'name.nickname': nickname }).then(user => {
@@ -207,18 +203,17 @@ route.get('/nicknameExists/:nickname', (req, res) => {
     res.status(400).send({ error: 'Request malformated' });
   });
 });
-//------------------------------------------------------------------------------------//
-/**
- * Pofile photo recebe um multiparti-form, no middleware é buscado o USER_ID
- * Se o ID nao for encontrado na base de dados...
- * req.upload é setado para <true> e a imagem vai para uma pasta de lixo no disco rigido
- * Se o usuário for encontrado na base de dados a middleware segue em frente
- * É levado uma referencia do usuario encontrada na base de dados pelo middleware
- * É pegado o destino da foto e também o nome da foto para atualizar os campos do usuário
- * Usuário tem dois campos [originalPhoto, thumbnail] que acompanha o link da imagem em disco
- * Sempre que a rota é chamada, é apagado as antigas fotos em disco para otimizar espaço
- */
 route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
+  /**
+   * Pofile photo recebe um multiparti-form, no middleware é buscado o USER_ID
+   * Se o ID nao for encontrado na base de dados...
+   * req.upload é setado para <true> e a imagem vai para uma pasta de lixo no disco rigido
+   * Se o usuário for encontrado na base de dados a middleware segue em frente
+   * É levado uma referencia do usuario encontrada na base de dados pelo middleware
+   * É pegado o destino da foto e também o nome da foto para atualizar os campos do usuário
+   * Usuário tem dois campos [originalPhoto, thumbnail] que acompanha o link da imagem em disco
+   * Sempre que a rota é chamada, é apagado as antigas fotos em disco para otimizar espaço
+   */
   if (req.uploadError) return res.status(400).send({ error: 'User not found' });
 
   const user = req.model;
@@ -265,14 +260,12 @@ route.patch('/profilePhoto/:id', uploadMiddleware, (req, res) => {
       });
   });
 });
-
-//------------------------------------------------------------------------------------//
-/**
- * Edit perfil de usuário recebe um USER_ID para buscar no banco
- * Metodo PUT porque recebe todas informações novamente como email
- * Busca ID no banco se encontrado o user é atualizado com os novos dados
- */
 route.put('/edit', (req, res) => {
+  /**
+   * Edit perfil de usuário recebe um USER_ID para buscar no banco
+   * Metodo PUT porque recebe todas informações novamente como email
+   * Busca ID no banco se encontrado o user é atualizado com os novos dados
+   */
   const {
     bio,
     email,
@@ -337,15 +330,13 @@ route.put('/edit', (req, res) => {
       res.status(400).send({ error: 'Upload malformated' })
     });
 });
-
-//------------------------------------------------------------------------------------//
-/**
- * Auth primeiro verifica se o usuário foreneceu os dados necessarios
- * Se sim confere no banco se o usuario existe
- * Se sim bcrypt compara a senha com o hash do banco de dados
- * Se ok o usuario recebe um token valido por 1 dia
- */
 route.post('/auth', (req, res) => {
+  /**
+   * Auth primeiro verifica se o usuário foreneceu os dados necessarios
+   * Se sim confere no banco se o usuario existe
+   * Se sim bcrypt compara a senha com o hash do banco de dados
+   * Se ok o usuario recebe um token valido por 1 dia
+   */
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -378,13 +369,12 @@ route.post('/auth', (req, res) => {
     });
   }).catch(err => res.status(400).send({ error: 'Input malformated' }));
 });
-
-/**
- * Validade token é so uma rota para passar pelo Middleware que valida o token
- * Se for validado ela cai nessa funcao e é retornado status 200 de OK
- * Se nao ela é rejeitada pelo middleware de validacao com erro de token expirado
- */
 route.post('/validateToken', (req, res) => {
+  /**
+   * Validade token é so uma rota para passar pelo Middleware que valida o token
+   * Se for validado ela cai nessa funcao e é retornado status 200 de OK
+   * Se nao ela é rejeitada pelo middleware de validacao com erro de token expirado
+   */
   const { userId } = req.body;
 
   User.findById({ _id: userId }).then(user => {
@@ -397,12 +387,12 @@ route.post('/validateToken', (req, res) => {
   })
 
 });
-/**
- * Follow recebe um UserId de quem esta seguindo e um FollowId de quem ira seguir
- * Verifica na base de dados de o userId existe no bando
- * Se existir o campo de following recebe o novo FollowId de quem ira seguir
- */
 route.post('/follow', (req, res) => {
+  /**
+   * Follow recebe um UserId de quem esta seguindo e um FollowId de quem ira seguir
+   * Verifica na base de dados de o userId existe no bando
+   * Se existir o campo de following recebe o novo FollowId de quem ira seguir
+   */
   const { userId, followUserId } = req.body;
 
   if (!userId || !followUserId) return res.status(400).send({ error: 'Request malformated' });
@@ -426,14 +416,13 @@ route.post('/follow', (req, res) => {
   })
 
 })
-
-/**
- * Unfollow recebe um UserId de quem está deixando de seguir e um unfollowId de pessoa que sera deixada de seguir
- * Verifica na base de o UserId esta cadastrado
- * Se estiver é filtrado o campo de following do usuario
- * É preenchido um payload com o restante dos follows do usuario e entao atualzado o modelo do usuário
- */
 route.post('/unfollow', (req, res) => {
+  /**
+   * Unfollow recebe um UserId de quem está deixando de seguir e um unfollowId de pessoa que sera deixada de seguir
+   * Verifica na base de o UserId esta cadastrado
+   * Se estiver é filtrado o campo de following do usuario
+   * É preenchido um payload com o restante dos follows do usuario e entao atualzado o modelo do usuário
+   */
   const { userId, unfollowUserId } = req.body;
 
   if (!userId || !unfollowUserId) return res.status(400).send({ error: 'UserId or UnfollowUserId not provided' });
@@ -456,14 +445,13 @@ route.post('/unfollow', (req, res) => {
     }
   }).catch(err => res.send({ error: 'Request malformated' }));
 });
-//------------------------------------------------------------------------------------//
-/**
- * Users Forgot his Password
- * Recebe um e-mail de quem esta querendo recuperar a senha
- * É salvo no modelo do usuario um token de recuperação e um tempo limite
- * Após isso o certo e-mail recebe o token no seu respectivo e-mail e já pode ir pra proxima rota
- */
 route.post('/forgot_password', (req, res) => {
+  /**
+   * Users Forgot his Password
+   * Recebe um e-mail de quem esta querendo recuperar a senha
+   * É salvo no modelo do usuario um token de recuperação e um tempo limite
+   * Após isso o certo e-mail recebe o token no seu respectivo e-mail e já pode ir pra proxima rota
+   */
 
   User.findOne({ email: req.body.email }).select('+password').then((user) => {
     if (!user) return res.status(400).send({ error: 'User not found' });
@@ -490,16 +478,14 @@ route.post('/forgot_password', (req, res) => {
     }).catch(err => res.status(500).send({ error: 'Error in updating user token to reset password' }));
   }).catch(err => res.status(400).send({ error: 'Request malformated' }));
 });
-
-//------------------------------------------------------------------------------------//
-/**
- * reset Password recebe um email e um token de recuperacao
- * Confirma se o usuario forneceu um token e uma nova senha
- * Se sim o email é procurado no banco de dados
- * Se encontrado o token e o tempo limite so conferidos
- * Se (token === user.token e tempoLimite < agora) => usuario é atualizado
- */
 route.patch('/reset_password', (req, res) => {
+  /**
+   * reset Password recebe um email e um token de recuperacao
+   * Confirma se o usuario forneceu um token e uma nova senha
+   * Se sim o email é procurado no banco de dados
+   * Se encontrado o token e o tempo limite so conferidos
+   * Se (token === user.token e tempoLimite < agora) => usuario é atualizado
+   */
   const { token, email, password } = req.body;
   if (!token) return res.status(400).send({ error: 'Token no provided' });
   if (!password) return res.status(400).send({ error: 'Password not provided' });
@@ -529,15 +515,14 @@ route.patch('/reset_password', (req, res) => {
       }
     }).catch(err => res.status(400).send({ error: 'User not found' }));
 });
-
-/**
- * Delete User recebe um USER_ID
- * Verifica na base se esse usuario existe e o deleta
- * O metodo delete retorna o usuario deletado
- * Itero pelo campo do posts do usuario deletado
- * Invoco o metodo delete do post passando os POST_ID que pertenciam aquele usuário
- */
 route.delete('/delete/:id', (req, res) => {
+  /**
+   * Delete User recebe um USER_ID
+   * Verifica na base se esse usuario existe e o deleta
+   * O metodo delete retorna o usuario deletado
+   * Itero pelo campo do posts do usuario deletado
+   * Invoco o metodo delete do post passando os POST_ID que pertenciam aquele usuário
+   */
   User.findByIdAndRemove({ _id: req.params.id }).then(user => {
 
     if (user.posts.length) {
@@ -563,15 +548,11 @@ route.delete('/delete/:id', (req, res) => {
     res.status(400).send({ error: 'User not found' })
   });
 });
-
-//------------------------------------------------------------------------------------//
 route.delete('/delete_all', (req, res) => {
   User.deleteMany({}).then(() => {
     res.send({ remove: 'all' });
   });
 });
-
-
 route.post('/debug', (req, res) => {
 
   console.log(req.body);
