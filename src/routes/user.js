@@ -70,13 +70,17 @@ route.get('/search/:content', (req, res) => {
    * Search faz uma busca no banco utilizando uma regex
    * Qualquer string com semelhanca é retornado do banco
    */
-  const content = req.params.content;
+  const content = req.params.content.split('%20');
+
+  const partsContent = content[0].split(' ');
+
+  const lastname = partsContent.length <= 1 ? partsContent[0] : partsContent[1];
 
   User.find({
     $or: [
-      { 'name.first': { $regex: new RegExp(content, 'i') } },
-      { 'name.last': { $regex: new RegExp(content, 'i') } },
-      { 'name.nickname': { $regex: new RegExp(content, 'i') } }
+      { 'name.first': { $regex: new RegExp(partsContent[0], 'i') } },
+      { 'name.last': { $regex: new RegExp(lastname, 'i') } },
+      { 'name.nickname': { $regex: new RegExp(partsContent[0], 'i') } }
     ]
   })
     .select('-posts -createdAt -socialMedia -following -bio -email -photo.originalPhoto')
