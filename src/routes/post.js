@@ -148,7 +148,11 @@ route.delete('/push', (req, res) => {
 
     payload.pushes.times > 0 ? payload.pushes.times-- : null;
 
-    payload.pushes.users = payload.pushes.users.filter(user => user.toString() != assignedTo);
+    let usersPushed = [];
+
+    usersPushed = post.pushes.users.filter(user => user.toString() != assignedTo);
+
+    payload.pushes.users = usersPushed;
 
     post.update(payload, (err) => {
       if (err) return res.status(500).send({ error: 'Error on pushes update, try again' });
