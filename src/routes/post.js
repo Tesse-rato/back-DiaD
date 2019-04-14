@@ -220,19 +220,34 @@ route.patch('/editComment', (req, res) => {
 
   }).catch(err => res.status(400).send({ error: 'Request malformated' }));
 });
-route.get('/list/:category', (req, res) => {
+route.get('/list/:category/:page/:limit', (req, res) => {
   /**
    * Apenas lista o posts para debug
    */
-  const category = req.params.category;
+
+  let { page, limit, category } = req.params;
 
   Post.find({ category })
     .populate({ path: 'assignedTo', select: 'photo name' })
     .populate({ path: 'comments.assignedTo', select: 'photo name' })
-
-
     .then(posts => {
-      res.send(posts);
+
+      limit = parseInt(limit);
+      page = parseInt(page);
+      posts = posts.sort((a, b) => a.pushes.times - b.pushes.times).reverse();
+
+      if ((page * limit) > posts.length) return res.status(200).send({ posts: [] });
+
+      let payload = [];
+
+      for (let i = (page * limit); i < (page * limit) + limit; i++) {
+
+        if (!posts[i]) break;
+
+        payload.push(posts[i]);
+      }
+
+      res.send({ posts: payload });
     });
 });
 route.get('/list/favorites/:id', (req, res) => {
